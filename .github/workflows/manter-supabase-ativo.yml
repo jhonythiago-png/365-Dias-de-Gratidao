@@ -1,0 +1,54 @@
+
+# ============================================================
+# 365 Dias de Gratidão — mantém o Supabase ativo
+# Roda sozinho toda segunda e quinta (9h, horário de Brasília),
+# faz uma consulta real ao banco e registra a execução no repositório.
+# Também pode ser executado manualmente: aba Actions → este fluxo → Run workflow.
+# ============================================================
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: "0 12 * * 1,4"   # 12h UTC = 9h em Brasília, segunda e quinta
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  manter-ativo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o banco do Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Cadastre os secrets SUPABASE_URL e SUPABASE_ANON_KEY (veja o README)."
+            exit 1
+          fi
+          for tentativa in 1 2 3 4 5; do
+            STATUS=$(curl -s -o resposta.json -w "%{http_code}" \
+              "$SUPABASE_URL/rest/v1/config?select=id,data_lancamento&id=eq.1" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+            echo "Tentativa $tentativa: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then cat resposta.json; echo; exit 0; fi
+            sleep $((tentativa * 20))
+          done
+          echo "O Supabase não respondeu. Verifique se o projeto está pausado no painel do Supabase."
+          exit 1
+
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+
+      - name: Registrar a execução (mantém o repositório ativo)
+        run: |
+          mkdir -p .github/keepalive
+          echo "Última execução: $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (horário de Brasília) — Supabase respondeu normalmente." > .github/keepalive/ultima-execucao.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive/ultima-execucao.txt
+          git commit -m "Supabase ativo: $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')" || echo "Nada para registrar."
+          git push
