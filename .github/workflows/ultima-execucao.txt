@@ -1,0 +1,1 @@
+Ainda não executado. Este arquivo é atualizado automaticamente pelo fluxo 'Manter Supabase ativo'.
