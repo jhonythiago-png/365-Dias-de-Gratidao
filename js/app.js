@@ -180,7 +180,7 @@
       </header>
       <div class="rolagem">
         <section class="saudacao">
-          <span class="kicker">${c.pre ? `faltam ${G.diasEntre(c.hoje, c.lanc)} dias para ${G.fmtNum(c.lanc)}` : esc(G.fmtLonga(c.hoje))}</span>
+          <span class="kicker">${esc(G.fmtLonga(c.hoje))}</span>
           <h1 class="titulo">${sd},<br><em>vamos agradecer?</em></h1>
           <p class="aux">${sdTxt}</p>
         </section>
