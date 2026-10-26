@@ -105,6 +105,7 @@
         <div class="regra" id="regra"><strong>Regra de início</strong><br>Quem se cadastrar até <strong>${G.fmtNum(corte)}</strong> começa junto com o grupo, em <strong>${G.fmtNum(lanc)}</strong>. Quem se cadastrar depois começa no primeiro dia que marcar como concluído.</div>
         ${chave("cfg-cadastro", "Cadastro aberto", "Desligue para impedir novos cadastros.", c.cadastro_aberto)}
         ${chave("cfg-exemplo", "Mostrar dia de exemplo", "Exibido apenas antes do lançamento.", c.mostrar_exemplo)}
+        <label class="campo">WhatsApp para pedidos de senha<input type="tel" id="cfg-whats" inputmode="tel" value="${esc(formatarWhats(c.whatsapp_suporte))}" placeholder="(44) 98437-3004"><span>Quem tocar em "Esqueci minha senha" no login abre uma conversa com este número.</span></label>
       </section>
       <section class="cartao p-form"><span class="kicker">Link e convite</span>
         <label class="campo">Link de cadastro<input type="url" id="cfg-link" value="${esc(c.link_cadastro)}" placeholder="${esc(padraoLink())}"><span>Endereço que vai nas imagens e na mensagem de convite. Em branco, usa o endereço do app.</span></label>
@@ -139,6 +140,17 @@
     </section></div>`;
   }
 
+  function formatarWhats(n) {
+    const d = String(n || "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return d;
+  }
+  function normalizarWhats(v) {
+    const d = String(v || "").replace(/\D/g, "");
+    if (d.length === 10 || d.length === 11) return "55" + d;
+    return d;
+  }
   const padraoLink = () => location.origin + location.pathname.replace(/[^/]*$/, "");
   const linkCadastro = () => (S.config.link_cadastro || "").trim() || padraoLink();
 
@@ -193,6 +205,7 @@
         link_cadastro: G.$("#cfg-link").value.trim(),
         convite_titulo: G.$("#cfg-titulo").value.trim(),
         convite_msg: G.$("#cfg-msg").value,
+        whatsapp_suporte: normalizarWhats(G.$("#cfg-whats").value) || S.config.whatsapp_suporte,
         atualizado_em: new Date().toISOString()
       };
       el.disabled = true;

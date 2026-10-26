@@ -33,8 +33,11 @@ create table if not exists public.config (
   link_cadastro    text not null default '',
   convite_titulo   text not null default 'Você aceita viver 365 dias aprendendo a agradecer?',
   convite_msg      text not null default '',
+  whatsapp_suporte text not null default '5544984373004',
   atualizado_em    timestamptz not null default now()
 );
+
+alter table public.config add column if not exists whatsapp_suporte text not null default '5544984373004';
 
 insert into public.config (id, convite_msg) values (1,
 'Convite para o projeto

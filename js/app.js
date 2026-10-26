@@ -76,7 +76,7 @@
      ============================================================ */
   async function carregarConfigPublica() {
     const { data } = await sb.from("config").select("*").eq("id", 1).maybeSingle();
-    S.config = data || { data_lancamento: "2027-01-01", cadastro_aberto: true, mostrar_exemplo: true, link_cadastro: "", convite_titulo: "", convite_msg: "" };
+    S.config = data || { data_lancamento: "2027-01-01", cadastro_aberto: true, mostrar_exemplo: true, link_cadastro: "", convite_titulo: "", convite_msg: "", whatsapp_suporte: "5544984373004" };
   }
   async function carregarTudo() {
     const [cfg, perfil, prog] = await Promise.all([
@@ -140,7 +140,8 @@
         <label class="campo">Senha<input id="in-senha" type="password" minlength="6" autocomplete="${criar ? "new-password" : "current-password"}" placeholder="Mínimo de 6 caracteres"></label>
         ${L.erro ? `<p class="erro" role="alert">${esc(L.erro)}</p>` : ""}
         <button class="btn-verde" type="submit" id="btn-entrar">${criar ? "Criar conta e começar" : "Entrar"}</button>
-        <p class="dica">${criar ? "Sem aprovação: a conta já fica pronta para usar." : "Seu progresso fica salvo na sua conta, em qualquer aparelho."}</p>`}
+        <p class="dica">${criar ? "Sem aprovação: a conta já fica pronta para usar." : "Seu progresso fica salvo na sua conta, em qualquer aparelho."}</p>
+        ${criar ? "" : `<button type="button" class="btn-texto" data-acao="esqueci" style="margin:-4px auto 0;color:var(--verde);font-weight:700;text-decoration:underline;text-underline-offset:3px">Esqueci minha senha</button>`}`}
       </form>
       <p class="credito">Desenvolvido por Jhony Beraldo</p>
     </section>`;
@@ -496,6 +497,13 @@
     const c = S.user && S.config && S.perfil ? C() : null;
     switch (a) {
       case "voltar": voltar(); break;
+      case "esqueci": {
+        const num = String((S.config && S.config.whatsapp_suporte) || "5544984373004").replace(/\D/g, "");
+        const u = G.normalizarUsuario(S.login.usuario);
+        const texto = `Olá, esqueci a senha do 365 dias de gratidão. Meu usuário é ${u || "___"}`;
+        window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`, "_blank");
+        break;
+      }
       case "aba-entrar": S.login.aba = "entrar"; S.login.erro = ""; render(); break;
       case "aba-criar": S.login.aba = "criar"; S.login.erro = ""; render(); break;
       case "menu": S.menu = true; try { history.pushState({ m: 1 }, ""); } catch (e) {} render(); break;

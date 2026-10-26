@@ -73,7 +73,11 @@ As imagens (1080 × 1920) são geradas no próprio celular. Os botões abrem a t
 
 ## Esqueceu a senha
 
-Painel master → *Participantes* → *Redefinir senha* → defina a nova senha e envie para a pessoa.
+1. Na tela de login, a pessoa toca em **Esqueci minha senha**: abre o WhatsApp (44) 98437-3004 com a mensagem
+   "Olá, esqueci a senha do 365 dias de gratidão. Meu usuário é …" já preenchida.
+2. Você abre o painel master → *Participantes* → *Redefinir senha*, define a nova senha e envia para a pessoa.
+
+O número pode ser trocado no painel master → *Configurações* → *WhatsApp para pedidos de senha*.
 
 ## Ao publicar uma atualização
 
