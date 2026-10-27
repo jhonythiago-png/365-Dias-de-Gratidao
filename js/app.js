@@ -157,7 +157,7 @@
         <span class="card-tag">${ic("brilho", 15)} O PLANO COMEÇA EM ${G.fmtNum(c.lanc)}</span>
         <div class="contagem"><strong>${faltam}</strong><span>${faltam === 1 ? "dia para começarmos" : "dias para começarmos"}</span></div>
         <p>Sua conta já está pronta. Enquanto isso, conheça como será cada dia.</p>
-        ${S.config.mostrar_exemplo !== false ? `<button class="btn-prim largo" data-acao="exemplo">Ver um dia de exemplo ${ic("seta", 18)}</button>` : ""}
+        ${S.config.mostrar_exemplo !== false ? `<button class="btn-prim largo" data-acao="exemplo">Fazer um dia de teste ${ic("seta", 18)}</button>` : ""}
         <button class="btn-claro-borda" data-acao="convite">${ic("enviar", 18)} Convidar amigos</button>
       </section>`;
     } else {
@@ -231,12 +231,12 @@
 
   function telaExemplo() {
     const c = C();
-    return `${cab("Dia de exemplo")}
+    return `${cab("Dia de teste")}
       <div class="rolagem">
-        <p class="faixa ouro">${ic("brilho", 16)} Exemplo para conhecer o formato. Não conta no seu percurso.</p>
+        <p class="faixa ouro">${ic("brilho", 16)} Dia de teste, só para você conhecer. A partir de ${G.fmtNum(c.lanc)}, cada dia concluído fica salvo no seu percurso.</p>
         <div style="margin-bottom:16px"><span style="display:block;font-family:var(--f-serif);font-size:26px;color:#2D473A">Dia 1</span><span class="dia-titulo">${esc(EX.titulo)}</span></div>
         <section class="bloco-verso"><span class="rotulo">Versículo</span><div class="aspas-g">“</div><p>${esc(EX.v)}</p>
-          <div class="verso-rodape"><cite>— ${esc(EX.ref)}</cite></div></section>
+          <div class="verso-rodape"><cite>— ${esc(EX.ref)}</cite><button class="btn-pilula" data-acao="compartilhar" data-tab="v" aria-label="Compartilhar versículo">${ic("enviar", 16)} Compartilhar</button></div></section>
         <section class="secao"><span class="rotulo">Verdade prática</span><h2 class="verdade">${esc(EX.verdade)}</h2></section>
         <section class="secao"><span class="rotulo">Reflexão</span>${EX.reflexao.map((t) => `<p class="leitura">${esc(t)}</p>`).join("")}</section>
         <section class="caixa-exemplo"><span class="ic">${ic("coracao", 18)}</span><div><span class="rotulo">Exemplo para auxiliar</span>
@@ -245,18 +245,19 @@
           <p class="leitura">${esc(EX.praticaIntro)}</p>
           <blockquote class="oracao-destaque">“${esc(EX.praticaOracao)}”</blockquote>
           <p class="leitura">${esc(EX.praticaFim)}</p></section>
-        <div class="fim-exemplo"><strong>Nos vemos em ${G.fmtNum(c.lanc)}</strong><span>Faltam ${G.diasEntre(c.hoje, c.lanc)} dias. Que tal chamar alguém para começar junto?</span>
-          <button class="btn-prim largo" data-acao="convite">${ic("enviar", 18)} Convidar amigos</button></div>
+        <button class="btn-prim largo" data-acao="grat-teste">${ic("relogio", 19)} Iniciar momento de gratidão</button>
+        <button class="btn-sec" style="margin-top:10px" data-acao="compartilhar" data-tab="v">${ic("enviar", 18)} Compartilhar no Instagram ou WhatsApp</button>
         ${tamCtrl()}
       </div>
       ${nav("dev")}`;
   }
 
   function telaGrat() {
-    const n = S.p.dia, d = DIAS[n - 1], T = S.timer;
+    const teste = !!S.p.teste, n = S.p.dia, d = teste ? EX : DIAS[n - 1], T = S.timer;
     return `${cab("Momento de gratidão")}
       <div class="grat">
-        <span class="kicker">dia ${n} · ${esc(d.ref.toLowerCase())}</span>
+        ${teste ? `<p class="faixa ouro" style="margin:-14px 0 18px">${ic("brilho", 16)} Dia de teste: ele não entra no seu percurso.</p>` : ""}
+        <span class="kicker">${teste ? "dia de teste" : "dia " + n} · ${esc(d.ref.toLowerCase())}</span>
         <h1 class="titulo m">Agora, apenas<br><em>agradeça.</em></h1>
         <p class="aux">Feche os olhos. Respire com calma. Deixe seu coração reconhecer a bondade de Deus.</p>
         <div class="anel" id="anel"><div><small class="r">tempo de gratidão</small><strong id="tempo">00:00</strong><small class="s" id="tempo-sub"></small></div></div>
@@ -279,7 +280,9 @@
   }
 
   function telaProg() {
-    const c = C(), meses = mesesDoPercurso(c), nF = c.nF;
+    const real = C(), teste = !!S.p.teste;
+    const c = teste ? Object.assign({}, real, { pre: false, nF: 1, seq: 1, hojeN: 1, inicio: real.lanc, feito: (n) => n === 1, dataDia: (n) => G.somarDias(real.lanc, n - 1) }) : real;
+    const meses = mesesDoPercurso(c), nF = c.nF;
     const kHoje = c.pre ? -1 : c.dataDia(c.hojeN).getFullYear() * 12 + c.dataDia(c.hojeN).getMonth();
     const cruza = meses[0].y !== meses[meses.length - 1].y;
     const fim = meses[meses.length - 1];
@@ -287,27 +290,29 @@
     const linhas = meses.map((m) => {
       const tem = m.feitos > 0, completo = m.feitos === m.total, futuro = m.k > kHoje, atual = m.k === kHoje;
       const nome = G.MESC[m.mo] + (cruza ? " " + String(m.y).slice(2) : "");
-      return `<button class="mes ${atual ? "atual" : ""} ${futuro ? "futuro" : ""} ${tem ? "" : "sem"}" ${tem ? `data-acao="mes" data-k="${m.k}"` : 'tabindex="-1"'} aria-label="${G.MES[m.mo]} de ${m.y}: ${m.feitos} de ${m.total} dias">
+      const clica = tem && !teste;
+      return `<button class="mes ${atual ? "atual" : ""} ${futuro ? "futuro" : ""} ${clica ? "" : "sem"}" ${clica ? `data-acao="mes" data-k="${m.k}"` : 'tabindex="-1"'} aria-label="${G.MES[m.mo]} de ${m.y}: ${m.feitos} de ${m.total} dias">
           <span>${nome}</span><span class="barra"><i style="width:${(m.feitos / m.total * 100).toFixed(1)}%"></i></span>
           <span class="qtd ${completo ? "" : "n"}">${completo ? ic("folha", 17, 2) : `${m.feitos} de ${m.total}`}</span>
-          <span class="chev" style="opacity:${tem ? 1 : 0}">${ic("seta", 16, 2)}</span></button>`;
+          <span class="chev" style="opacity:${clica ? 1 : 0}">${ic("seta", 16, 2)}</span></button>`;
     }).join("");
     const feitoAgora = S.p.feitoDia;
     return `${cab("Meu percurso")}
       <div class="rolagem" style="padding-top:28px">
+        ${teste ? `<p class="faixa ouro">${ic("brilho", 16)} Simulação do dia de teste. A partir de ${G.fmtNum(real.lanc)}, seus dias concluídos ficam salvos aqui.</p>` : ""}
         <section>
           <span class="kicker">um dia de cada vez</span>
           <h1 class="titulo m">Seu caminho<br><em>de gratidão.</em></h1>
           <p class="aux" style="margin-bottom:22px">Você está construindo uma memória diária da bondade de Deus.</p>
           <div class="prog-topo">
             <div><div class="prog-num"><strong>${nF}</strong><span>/ 365 dias</span></div><span class="fase">${G.faseArvore(nF)}</span></div>
-            <button class="arvore-btn" data-acao="arvore" aria-label="Ver minha árvore da gratidão">${G.arvoreSVG(nF, "pt", 112)}</button>
+            <button class="arvore-btn" data-acao="arvore" data-teste="${teste ? 1 : ""}" aria-label="Ver minha árvore da gratidão">${G.arvoreSVG(nF, "pt", 112)}</button>
           </div>
           ${regua(nF, true)}
         </section>
         <section class="constancia"><span class="ic">${ic("chama", 20)}</span><div><small>constância</small><strong>${seqTxt}</strong></div>${c.seq > 0 ? `<span class="mais">continue assim</span>` : ""}</section>
-        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} Dia ${feitoAgora} marcado como concluído</p>
-          <button class="btn-prim largo" style="margin-top:10px" data-acao="compartilhar" data-dia="${feitoAgora}">${ic("enviar", 18)} Compartilhar meu dia</button>` : ""}
+        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} ${teste ? "Dia de teste marcado como concluído" : `Dia ${feitoAgora} marcado como concluído`}</p>
+          <button class="btn-prim largo" style="margin-top:10px" data-acao="compartilhar" ${teste ? 'data-tab="v"' : `data-dia="${feitoAgora}"`}>${ic("enviar", 18)} Compartilhar meu dia</button>` : ""}
         <section class="meses">
           <div class="meses-cab"><div><span class="kicker claro">${G.MESC[meses[0].mo].toUpperCase()} ${meses[0].y} – ${G.MESC[fim.mo].toUpperCase()} ${fim.y}</span><h2>Seu ano em gratidão</h2></div><span style="color:#DDB97A">${ic("folha", 22)}</span></div>
           <div style="margin-top:14px">${linhas}</div>
@@ -337,7 +342,7 @@
   }
 
   function telaArvore() {
-    const c = C(), n = c.nF;
+    const c = C(), n = S.p.teste ? 1 : c.nF;
     return `${cab("Minha árvore")}
       <div class="rolagem" style="padding-top:22px">
         <span class="kicker">árvore da gratidão</span>
@@ -520,9 +525,11 @@
       case "exemplo": ir("exemplo"); break;
       case "convite": S.share.tab = "c"; ir("share", {}); break;
       case "grat": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; ir("grat", { dia: S.p.dia }); break;
+      case "grat-teste": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; ir("grat", { teste: true }); break;
       case "min": pararTimer(); S.timer.min = +el.dataset.min; S.timer.secs = S.timer.min * 60; render(); break;
       case "timer": alternarTimer(); break;
       case "concluir": {
+        if (S.p.teste) { pararTimer(); ir("prog", { teste: true, feitoDia: "teste" }, { raiz: true }); break; }
         const n = S.p.dia;
         if (c.feito(n)) { ir("prog", { feitoDia: n }, { raiz: true }); break; }
         el.disabled = true;
@@ -533,7 +540,7 @@
         ir("prog", { feitoDia: n }, { raiz: true });
         break;
       }
-      case "arvore": ir("arvore"); break;
+      case "arvore": ir("arvore", { teste: !!el.dataset.teste }); break;
       case "mes": ir("mes", { k: +el.dataset.k }); break;
       case "compartilhar": {
         const dia = el.dataset.dia ? +el.dataset.dia : S.p.dia;

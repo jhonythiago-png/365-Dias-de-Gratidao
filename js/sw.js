@@ -1,6 +1,6 @@
 /* 365 Dias de Gratidão — service worker (funciona offline e abre rápido)
    Ao publicar uma atualização, aumente o número da VERSAO. */
-const VERSAO = "g365-v2";
+const VERSAO = "g365-v3";
 const ARQUIVOS = [
   "./", "./index.html", "./admin.html", "./manifest.webmanifest",
   "./css/app.css", "./css/admin.css",
