@@ -230,10 +230,10 @@
   }
 
   function telaExemplo() {
-    const c = C();
-    return `${cab("Dia de teste")}
+    const c = C(), leitura = !!S.p.leitura;
+    return `${cab(leitura ? "Reler · Dia de teste" : "Dia de teste")}
       <div class="rolagem">
-        <p class="faixa ouro">${ic("brilho", 16)} Dia de teste, só para você conhecer. A partir de ${G.fmtNum(c.lanc)}, cada dia concluído fica salvo no seu percurso.</p>
+        ${leitura ? `<p class="faixa ok">${ic("check", 17, 2.4)} Dia concluído · modo de leitura</p>` : `<p class="faixa ouro">${ic("brilho", 16)} Dia de teste, só para você conhecer. A partir de ${G.fmtNum(c.lanc)}, cada dia concluído fica salvo no seu percurso.</p>`}
         <div style="margin-bottom:16px"><span style="display:block;font-family:var(--f-serif);font-size:26px;color:#2D473A">Dia 1</span><span class="dia-titulo">${esc(EX.titulo)}</span></div>
         <section class="bloco-verso"><span class="rotulo">Versículo</span><div class="aspas-g">“</div><p>${esc(EX.v)}</p>
           <div class="verso-rodape"><cite>— ${esc(EX.ref)}</cite><button class="btn-pilula" data-acao="compartilhar" data-tab="v" aria-label="Compartilhar versículo">${ic("enviar", 16)} Compartilhar</button></div></section>
@@ -245,7 +245,7 @@
           <p class="leitura">${esc(EX.praticaIntro)}</p>
           <blockquote class="oracao-destaque">“${esc(EX.praticaOracao)}”</blockquote>
           <p class="leitura">${esc(EX.praticaFim)}</p></section>
-        <button class="btn-prim largo" data-acao="grat-teste">${ic("relogio", 19)} Iniciar momento de gratidão</button>
+        ${leitura ? "" : `<button class="btn-prim largo" data-acao="grat-teste">${ic("relogio", 19)} Iniciar momento de gratidão</button>`}
         <button class="btn-sec" style="margin-top:10px" data-acao="compartilhar" data-tab="v">${ic("enviar", 18)} Compartilhar no Instagram ou WhatsApp</button>
         ${tamCtrl()}
       </div>
@@ -290,8 +290,8 @@
     const linhas = meses.map((m) => {
       const tem = m.feitos > 0, completo = m.feitos === m.total, futuro = m.k > kHoje, atual = m.k === kHoje;
       const nome = G.MESC[m.mo] + (cruza ? " " + String(m.y).slice(2) : "");
-      const clica = tem && !teste;
-      return `<button class="mes ${atual ? "atual" : ""} ${futuro ? "futuro" : ""} ${clica ? "" : "sem"}" ${clica ? `data-acao="mes" data-k="${m.k}"` : 'tabindex="-1"'} aria-label="${G.MES[m.mo]} de ${m.y}: ${m.feitos} de ${m.total} dias">
+      const clica = tem;
+      return `<button class="mes ${atual ? "atual" : ""} ${futuro ? "futuro" : ""} ${clica ? "" : "sem"}" ${clica ? `data-acao="mes" data-k="${m.k}" data-teste="${teste ? 1 : ""}"` : 'tabindex="-1"'} aria-label="${G.MES[m.mo]} de ${m.y}: ${m.feitos} de ${m.total} dias">
           <span>${nome}</span><span class="barra"><i style="width:${(m.feitos / m.total * 100).toFixed(1)}%"></i></span>
           <span class="qtd ${completo ? "" : "n"}">${completo ? ic("folha", 17, 2) : `${m.feitos} de ${m.total}`}</span>
           <span class="chev" style="opacity:${clica ? 1 : 0}">${ic("seta", 16, 2)}</span></button>`;
@@ -324,10 +324,26 @@
   }
 
   function telaMes() {
-    const c = C(), m = mesesDoPercurso(c).find((x) => x.k === S.p.k);
+    const real = C(), teste = !!S.p.teste;
+    const c = teste ? Object.assign({}, real, { pre: false, inicio: real.lanc, feito: (n) => n === 1, dataDia: (n) => G.somarDias(real.lanc, n - 1) }) : real;
+    const m = mesesDoPercurso(c).find((x) => x.k === S.p.k);
     if (!m) return telaProg();
     const nomeMes = G.MES[m.mo];
     const dias = m.dias.filter((n) => c.feito(n));
+    if (teste) {
+      const d = c.dataDia(1);
+      return `${cab(nomeMes[0].toUpperCase() + nomeMes.slice(1) + " de " + m.y)}
+      <div class="rolagem" style="padding-top:24px">
+        <p class="faixa ouro">${ic("brilho", 16)} Simulação do dia de teste. A partir de ${G.fmtNum(real.lanc)}, seus dias concluídos aparecem aqui.</p>
+        <span class="kicker">${m.y} · dias concluídos</span>
+        <h1 class="titulo m" style="margin-bottom:18px">Reler <em>${nomeMes}</em></h1>
+        <div class="lista-dias"><button class="item-dia" data-acao="reler-teste">
+            <span class="num"><small>DIA</small><b>1</b></span>
+            <span class="tx"><strong>${esc(EX.ref)}</strong><span>${G.SEMANA[d.getDay()]}, ${G.fmtNum(d)} · dia de teste</span></span>
+            <span style="color:#A8804A">${ic("seta", 18, 2)}</span></button></div>
+      </div>
+      ${nav("prog")}`;
+    }
     return `${cab(nomeMes[0].toUpperCase() + nomeMes.slice(1) + " de " + m.y)}
       <div class="rolagem" style="padding-top:24px">
         <span class="kicker">${m.y} · dias concluídos</span>
@@ -541,7 +557,8 @@
         break;
       }
       case "arvore": ir("arvore", { teste: !!el.dataset.teste }); break;
-      case "mes": ir("mes", { k: +el.dataset.k }); break;
+      case "mes": ir("mes", { k: +el.dataset.k, teste: !!el.dataset.teste }); break;
+      case "reler-teste": ir("exemplo", { leitura: true }); break;
       case "compartilhar": {
         const dia = el.dataset.dia ? +el.dataset.dia : S.p.dia;
         S.share.tab = el.dataset.tab || (c.pre ? "c" : "v");
