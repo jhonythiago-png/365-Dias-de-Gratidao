@@ -81,4 +81,6 @@ O número pode ser trocado no painel master → *Configurações* → *WhatsApp 
 
 ## Ao publicar uma atualização
 
-Aumente a versão em `sw.js` (`g365-v1` → `g365-v2`) para os celulares baixarem os arquivos novos.
+O app se atualiza sozinho: com internet, ele sempre carrega os arquivos mais novos do GitHub e,
+quando percebe uma versão nova, recarrega automaticamente. Ninguém precisa excluir e instalar de novo.
+Opcional: aumentar a versão em `sw.js` (ex.: `g365-v4` → `g365-v5`) para limpar cópias antigas guardadas no aparelho.
