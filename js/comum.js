@@ -264,7 +264,27 @@
   };
 
   /* ---------- PWA ---------- */
+  /* Atualização automática: sempre que o app é aberto ou volta para a tela,
+     verifica se há versão nova no GitHub e recarrega sozinho quando ela chega. */
   if ("serviceWorker" in navigator && location.protocol === "https:") {
-    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    const tinhaControle = !!navigator.serviceWorker.controller;
+    let recarregou = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!tinhaControle || recarregou) return;
+      recarregou = true;
+      location.reload();
+    });
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then((reg) => {
+        const verificar = () => reg.update().catch(() => {});
+        verificar();
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verificar(); });
+        if (reg.waiting) reg.waiting.postMessage("atualizar");
+        reg.addEventListener("updatefound", () => {
+          const novo = reg.installing;
+          if (novo) novo.addEventListener("statechange", () => { if (novo.state === "installed" && navigator.serviceWorker.controller) novo.postMessage("atualizar"); });
+        });
+      }).catch(() => {});
+    });
   }
 })();
