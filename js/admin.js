@@ -107,6 +107,7 @@
         <div class="regra" id="regra"><strong>Regra de início</strong><br>Quem se cadastrar até <strong>${G.fmtNum(corte)}</strong> começa junto com o grupo, em <strong>${G.fmtNum(lanc)}</strong>. Quem se cadastrar depois começa no primeiro dia que marcar como concluído.</div>
         ${chave("cfg-cadastro", "Cadastro aberto", "Desligue para impedir novos cadastros.", c.cadastro_aberto)}
         ${chave("cfg-exemplo", "Mostrar dia de exemplo", "Exibido apenas antes do lançamento.", c.mostrar_exemplo)}
+        <label class="campo">Início do devocional de casais<input type="date" id="cfg-casal" value="${esc(c.casal_lancamento || "")}"><span>Deixe em branco para liberar a partir de agora. Com uma data futura, quem tem acesso vê a contagem e o dia de teste até essa data. Cada casal começa quando quiser.</span></label>
         <label class="campo">WhatsApp para pedidos de senha<input type="tel" id="cfg-whats" inputmode="tel" value="${esc(formatarWhats(c.whatsapp_suporte))}" placeholder="(44) 98437-3004"><span>Quem tocar em "Esqueci minha senha" no login abre uma conversa com este número.</span></label>
       </section>
       <section class="cartao p-form"><span class="kicker">Link e convite</span>
@@ -204,6 +205,7 @@
         data_lancamento: G.$("#cfg-data").value || S.config.data_lancamento,
         cadastro_aberto: G.$("#cfg-cadastro").getAttribute("aria-checked") === "true",
         mostrar_exemplo: G.$("#cfg-exemplo").getAttribute("aria-checked") === "true",
+        casal_lancamento: (G.$("#cfg-casal") && G.$("#cfg-casal").value) || null,
         link_cadastro: G.$("#cfg-link").value.trim(),
         convite_titulo: G.$("#cfg-titulo").value.trim(),
         convite_msg: G.$("#cfg-msg").value,

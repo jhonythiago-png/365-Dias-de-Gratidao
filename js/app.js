@@ -57,7 +57,7 @@
   /* ---------- Regras do Casais: começa quando quiser, um dia por dia ---------- */
   function CC() {
     const hoje = G.hoje();
-    const lanc = G.dataISO(S.config.data_lancamento);
+    const lanc = S.config.casal_lancamento ? G.dataISO(S.config.casal_lancamento) : hoje;
     const pre = hoje < lanc;
     let inicio = null;
     S.concCasal.forEach((d) => { if (!inicio || d < inicio) inicio = d; });
@@ -424,7 +424,8 @@
         <span class="deco"></span>
         <span class="card-tag">${ic("brilho", 15)} COMEÇA EM ${G.fmtNum(c.lanc)}</span>
         <div class="contagem"><strong>${faltam}</strong><span>${faltam === 1 ? "dia para começar" : "dias para começar"}</span></div>
-        <p>O devocional de casais já está liberado para vocês. A partir do lançamento, cada dia será liberado no seu tempo.</p>
+        <p>O devocional de casais já está liberado para vocês. Enquanto isso, conheçam como será cada dia.</p>
+        <button class="btn-prim largo" data-acao="c-teste">Fazer um dia de teste ${ic("seta", 18)}</button>
       </section>`;
     } else if (c.aguardando) {
       card = `<section class="card-verde"><span class="deco"></span><span class="card-tag">${ic("brilho", 15)} DIA ${c.card}</span>
@@ -462,10 +463,12 @@
   }
 
   function cDev() {
-    const c = CC(), n = S.p.dia, d = DC[n - 1], e = c.etapa(n), leitura = c.feito(n);
-    const titulo = leitura ? `Reler · Dia ${n}` : n === c.hojeN ? "Devocional de hoje" : `Devocional do Dia ${n}`;
+    const c = CC(), teste = !!S.p.teste, n = teste ? 1 : S.p.dia, d = DC[n - 1], e = c.etapa(n);
+    const leitura = teste ? !!S.p.leitura : c.feito(n);
+    const titulo = teste ? (leitura ? "Reler · Dia de teste" : "Dia de teste") : leitura ? `Reler · Dia ${n}` : n === c.hojeN ? "Devocional de hoje" : `Devocional do Dia ${n}`;
     return `${cabC(titulo)}
       <div class="rolagem">
+        ${teste && !leitura ? `<p class="faixa ouro">${ic("brilho", 16)} Dia de teste, só para vocês conhecerem. A partir de ${G.fmtNum(c.lanc)}, cada dia concluído fica salvo no percurso de vocês.</p>` : ""}
         <span class="tag-dev">${BROTO(14)} Etapa ${e.n} · ${esc(e.tema)}</span>
         <div class="dia-cab"><span>Dia ${n}</span>${d.subtitulo ? `<strong>${esc(d.subtitulo)}</strong>` : ""}</div>
         ${leitura ? `<p class="faixa ok">${ic("check", 17, 2.4)} Dia concluído · modo de leitura</p>` : ""}
@@ -477,17 +480,19 @@
         </section>
         <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
         <section class="conversa"><span class="rotulo">Para conversar</span><p>${esc(d.conversar)}</p></section>
-        ${leitura ? `<section class="oracao-c"><span class="rotulo">Oração do casal</span><p>${esc(d.oracao)}</p></section>` : `<button class="btn-prim largo" style="margin-top:22px" data-acao="c-momento">${ic("relogio", 19)} Iniciar momento a dois</button>`}
+        ${leitura ? `<section class="oracao-c"><span class="rotulo">Oração do casal</span><p>${esc(d.oracao)}</p></section>` : `<button class="btn-prim largo" style="margin-top:22px" data-acao="${teste ? "c-momento-teste" : "c-momento"}">${ic("relogio", 19)} Iniciar momento a dois</button>`}
         ${tamCtrl()}
       </div>
       ${nav("dev")}`;
   }
 
   function cMomento() {
-    const n = S.p.dia, d = DC[n - 1], T = S.timer;
+    const n = S.p.teste ? 1 : S.p.dia, d = DC[n - 1], T = S.timer;
     const pontos = (e) => `<div class="pontos" aria-label="Etapa ${e} de 2"><i class="${e === 1 ? "on" : ""}"></i><i class="${e === 2 ? "on" : ""}"></i></div>`;
+    const teste = !!S.p.teste, aviso = teste ? `<p class="faixa ouro" style="margin:-14px 0 18px">${ic("brilho", 16)} Dia de teste: ele não entra no percurso de vocês.</p>` : "";
     if (!S.etapa2) return `${cabC("Momento a dois")}
       <div class="grat ora-tela">
+        ${aviso}
         ${pontos(1)}
         <span class="kicker">orem juntos</span>
         <p class="aux" style="margin-top:8px">De mãos dadas, leiam juntos em voz alta.</p>
@@ -498,6 +503,7 @@
       </div>`;
     return `${cabC("Momento a dois")}
       <div class="grat">
+        ${aviso}
         ${pontos(2)}
         <span class="kicker">agradeçam um pelo outro</span>
         <h1 class="titulo m">Agora, cada um<br><em>agradeça.</em></h1>
@@ -511,13 +517,15 @@
   }
 
   function cProg() {
-    const c = CC(), nF = c.nF;
+    const real = CC(), teste = !!S.p.teste;
+    const c = teste ? Object.assign({}, real, { pre: false, nF: 1, feito: (n) => n === 1, card: 1 }) : real;
+    const nF = c.nF;
     const atual = c.pre ? ETAPAS[0] : c.etapa(Math.min(c.card, 365));
     const linhas = ETAPAS.map((e) => {
       const total = e.fim - e.ini + 1;
       let feitos = 0; for (let n = e.ini; n <= e.fim; n++) if (c.feito(n)) feitos++;
       const tem = feitos > 0, completo = feitos === total, eAtual = e.n === atual.n && !c.pre, futuro = e.n > atual.n;
-      return `<button class="mes ${eAtual ? "atual" : ""} ${futuro ? "futuro" : ""} ${tem ? "" : "sem"}" ${tem ? `data-acao="c-etapa" data-e="${e.n}"` : 'tabindex="-1"'} aria-label="Etapa ${e.n}, ${esc(e.tema)}: ${feitos} de ${total} dias">
+      return `<button class="mes ${eAtual ? "atual" : ""} ${futuro ? "futuro" : ""} ${tem ? "" : "sem"}" ${tem ? `data-acao="c-etapa" data-e="${e.n}" data-teste="${teste ? 1 : ""}"` : 'tabindex="-1"'} aria-label="Etapa ${e.n}, ${esc(e.tema)}: ${feitos} de ${total} dias">
           <span>Etapa ${e.n}</span><span class="barra"><i style="width:${(feitos / total * 100).toFixed(1)}%"></i></span>
           <span class="qtd ${completo ? "" : "n"}">${completo ? BROTO(17) : `${feitos} de ${total}`}</span>
           <span class="chev" style="opacity:${tem ? 1 : 0}">${ic("seta", 16, 2)}</span></button>`;
@@ -525,13 +533,14 @@
     const feitoAgora = S.p.feitoDia;
     return `${cabC("Nosso percurso")}
       <div class="rolagem" style="padding-top:24px">
+        ${teste ? `<p class="faixa ouro">${ic("brilho", 16)} Simulação do dia de teste. A partir de ${G.fmtNum(real.lanc)}, os dias concluídos de vocês ficam salvos aqui.</p>` : ""}
         <span class="kicker">a árvore do casal</span>
         <h1 class="titulo m">Etapa ${atual.n} · <em>${esc(atual.tema)}</em></h1>
         <div class="arv-casal"><img src="${faseImg(atual.n)}" alt="Árvore do casal, fase ${atual.n}: ${esc(atual.fase)}"></div>
         <p class="fase-nome">Fase ${atual.n} de 12 · ${esc(atual.fase)}</p>
         <div class="prog-num" style="margin-top:18px"><strong>${nF}</strong><span>/ 365 dias</span></div>
         ${regua(nF, true)}
-        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} Dia ${feitoAgora} marcado como concluído</p>` : `<p class="aux" style="margin-top:14px">A cada etapa, a árvore do casal ganha uma nova fase: do terreno preparado até os frutos.</p>`}
+        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} ${teste ? "Dia de teste marcado como concluído" : `Dia ${feitoAgora} marcado como concluído`}</p>` : `<p class="aux" style="margin-top:14px">A cada etapa, a árvore do casal ganha uma nova fase: do terreno preparado até os frutos.</p>`}
         <section class="meses">
           <div class="meses-cab"><div><span class="kicker claro">12 etapas · 365 dias</span><h2>Nossa caminhada a dois</h2></div><span style="color:#F3C9D0">${BROTO(22)}</span></div>
           <div style="margin-top:14px">${linhas}</div>
@@ -543,14 +552,14 @@
   }
 
   function cEtapa() {
-    const c = CC(), e = ETAPAS.find((x) => x.n === S.p.e) || ETAPAS[0];
+    const teste = !!S.p.teste, c = teste ? Object.assign({}, CC(), { feito: (n) => n === 1 }) : CC(), e = ETAPAS.find((x) => x.n === S.p.e) || ETAPAS[0];
     const dias = []; for (let n = e.ini; n <= e.fim; n++) if (c.feito(n) && DC[n - 1]) dias.push(n);
     return `${cabC(`Etapa ${e.n}`)}
       <div class="rolagem" style="padding-top:24px">
         <span class="kicker">dias concluídos</span>
         <h1 class="titulo m" style="margin-bottom:18px">Reler · <em>${esc(e.tema)}</em></h1>
         ${dias.length ? "" : `<p class="aux">Os dias que vocês concluírem vão aparecer aqui.</p>`}
-        <div class="lista-dias">${dias.map((n) => `<button class="item-dia" data-acao="c-abrir" data-dia="${n}">
+        <div class="lista-dias">${dias.map((n) => `<button class="item-dia" data-acao="${teste ? "c-reler-teste" : "c-abrir"}" data-dia="${n}">
             <span class="num"><small>DIA</small><b>${n}</b></span>
             <span class="tx"><strong>${esc(DC[n - 1].ref)}</strong><span>${esc(DC[n - 1].titulo.charAt(0) + DC[n - 1].titulo.slice(1).toLowerCase())}</span></span>
             <span style="color:#A8505F">${ic("seta", 18, 2)}</span></button>`).join("")}</div>
@@ -768,16 +777,20 @@
       case "c-nav-prog": ir("c-prog", {}, { raiz: true }); break;
       case "c-nav-hoje": {
         const cc = CC();
-        if (cc.pre) G.toast(`O devocional de casais começa em ${G.fmtNum(cc.lanc)}.`);
+        if (cc.pre) ir("c-dev", { teste: true }, { raiz: true });
         else if (cc.aguardando) G.toast("O próximo dia está sendo preparado. Volte em breve.");
         else ir("c-dev", { dia: cc.card }, { raiz: true });
         break;
       }
       case "c-abrir": { const n = +el.dataset.dia, cc = CC(); if (n >= 1 && n <= cc.liberado) ir("c-dev", { dia: n }); break; }
+      case "c-teste": ir("c-dev", { teste: true }); break;
+      case "c-reler-teste": ir("c-dev", { teste: true, leitura: true }); break;
+      case "c-momento-teste": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { teste: true }); break;
       case "c-momento": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { dia: S.p.dia }); break;
       case "c-etapa2": S.etapa2 = true; try { history.pushState({ e2: 1 }, ""); } catch (e) {} render(true); break;
-      case "c-etapa": ir("c-etapa", { e: +el.dataset.e }); break;
+      case "c-etapa": ir("c-etapa", { e: +el.dataset.e, teste: !!el.dataset.teste }); break;
       case "c-concluir": {
+        if (S.p.teste) { pararTimer(); ir("c-prog", { teste: true, feitoDia: 1 }, { raiz: true }); break; }
         const n = S.p.dia;
         if (S.concCasal.has(n)) { ir("c-prog", { feitoDia: n }, { raiz: true }); break; }
         el.disabled = true;
