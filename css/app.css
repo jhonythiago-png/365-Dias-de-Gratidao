@@ -428,3 +428,6 @@ button[disabled] { opacity: 0.6; cursor: default; }
 .dev-op.on{border:2px solid #8C3B4A}
 .dev-op.on.og{border-color:#315745}.dev-op.on.og .ok{color:#315745}
 .dev-op .ok{margin-left:auto;color:#8C3B4A;font-size:13px;font-weight:700}
+.app.casal .mes { grid-template-columns: 74px 1fr 64px 16px; }
+.app.casal .mes > span:first-child { white-space: nowrap; }
+.conversa p + p { margin-top: 10px; }

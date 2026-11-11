@@ -462,6 +462,9 @@
       ${S.menu ? telaMenu() : ""}`;
   }
 
+  // cada pergunta em uma linha própria
+  const perguntas = (t) => String(t).split(/(?<=\?)\s+(?=\S)/).map((q) => `<p>${esc(q)}</p>`).join("");
+
   function cDev() {
     const c = CC(), teste = !!S.p.teste, n = teste ? 1 : S.p.dia, d = DC[n - 1], e = c.etapa(n);
     const leitura = teste ? !!S.p.leitura : c.feito(n);
@@ -479,7 +482,7 @@
           <div class="verso-rodape"><cite>— ${esc(d.ref)}</cite></div>
         </section>
         <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
-        <section class="conversa"><span class="rotulo">Para conversar</span><p>${esc(d.conversar)}</p></section>
+        <section class="conversa"><span class="rotulo">Para conversar</span>${perguntas(d.conversar)}</section>
         ${leitura ? `<section class="oracao-c"><span class="rotulo">Oração do casal</span><p>${esc(d.oracao)}</p></section>` : `<button class="btn-prim largo" style="margin-top:22px" data-acao="${teste ? "c-momento-teste" : "c-momento"}">${ic("relogio", 19)} Iniciar momento a dois</button>`}
         ${tamCtrl()}
       </div>
