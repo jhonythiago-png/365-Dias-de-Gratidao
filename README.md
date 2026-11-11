@@ -84,3 +84,13 @@ O número pode ser trocado no painel master → *Configurações* → *WhatsApp 
 O app se atualiza sozinho: com internet, ele sempre carrega os arquivos mais novos do GitHub e,
 quando percebe uma versão nova, recarrega automaticamente. Ninguém precisa excluir e instalar de novo.
 Opcional: aumentar a versão em `sw.js` (ex.: `g365-v4` → `g365-v5`) para limpar cópias antigas guardadas no aparelho.
+
+
+## Devocional de Casais
+
+1. No Supabase → SQL Editor, rode o arquivo `casais.sql` uma única vez (não altera nada do Gratidão).
+2. Para testar na sua conta: `update public.perfis set acesso_casal = true where usuario = 'jhony';`
+3. Para os participantes: painel master → Participantes → coluna **Casais** → ligar o acesso.
+4. No app, o participante com acesso troca de devocional pelo menu ☰ → "Meus devocionais".
+5. Cada casal começa quando quiser; o app libera um dia por dia, sem adiantar.
+6. A cada etapa aprovada, substitua somente `js/dados-casais.js` (o conteúdo novo é acrescentado ao final).

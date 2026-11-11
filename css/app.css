@@ -377,3 +377,54 @@ button[disabled] { opacity: 0.6; cursor: default; }
   transition: opacity 0.25s, transform 0.25s;
 }
 .toast.ver { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============================================================
+   Devocional de Casais (tom vinho)
+   ============================================================ */
+.app.casal .card-verde{background:linear-gradient(145deg,#7A3343 0%,#5A2433 100%);box-shadow:0 18px 36px rgba(90,36,51,.22)}
+.app.casal .selo{border-color:#B0707E;color:#8C3B4A}
+.app.casal .rotulo,.app.casal .kicker,.app.casal .dia-cab,.app.casal .verso-rodape cite{color:#8C3B4A}
+.app.casal .kicker.claro{color:#F3C9D0}
+.app.casal .titulo em{color:#8C3B4A}
+.app.casal .bloco-verso{background:#F7ECEC;border-color:#EBD3D6}
+.app.casal .bloco-verso .aspas-g{color:#D9A6AF}
+.app.casal .btn-prim{background:#F6DCE0;color:#5A2433}
+.app.casal .nav button.ativo{color:#5A2433}
+.app.casal .nav button.ativo svg{stroke:#8C3B4A}
+.app.casal .anel{background:conic-gradient(#A8505F var(--p,0%),#EBD8DA var(--p,0%))}
+.app.casal .anel small.r{color:#8C3B4A}
+.app.casal .chip.ativo{border-color:#A8505F;background:#F6DCE0;color:#5A2433}
+.app.casal .frase-ouro{color:#8C3B4A}
+.app.casal .regua .bolha{background:#A8505F;color:#fff}
+.app.casal .regua .trilho i{background:#A8505F}
+.app.casal .meses{background:#5A2433}
+.app.casal .mes .barra i{background:#E7A9B3}
+.app.casal .lembranca{border-left-color:#A8505F;background:#F7ECEC}
+.app.casal .lembranca cite{color:#8C3B4A}
+.app.casal .concluido-msg{color:#5A2433}
+.card-etapa{margin-top:14px;color:#F3D6DB;font-size:13px;font-weight:700;letter-spacing:1.4px}
+.tag-dev{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;padding:6px 12px;border-radius:999px;background:#F3DDE0;color:#7A3343;font-size:13px;font-weight:700}
+.ensino-tit{margin:10px 0 0;font-family:var(--f-serif);font-size:calc(21px*var(--k));line-height:1.35;color:#5A2433;font-weight:400;letter-spacing:.5px}
+.conversa{margin-top:20px;padding:18px;border-radius:18px;background:#FFFCF5;border:1px solid #EBD3D6}
+.conversa p{margin:8px 0 0;font-family:var(--f-serif);font-size:calc(18px*var(--k));line-height:1.6;color:#3C2A30}
+.oracao-c{margin-top:20px;padding:18px 20px;border-left:3px solid #A8505F;background:#F7ECEC}
+.oracao-c p{margin:8px 0 0;font-family:var(--f-serif);font-style:italic;font-size:calc(17px*var(--k));line-height:1.7;color:#3C2A30}
+.ora-tela{background:linear-gradient(180deg,#FBF4F4 0%,#F4E3E5 100%)}
+.ora-aspas{margin:26px 0 -18px;font-family:Georgia,serif;font-size:90px;line-height:1;color:#D9A6AF}
+.ora-texto{margin:0 auto;max-width:320px;font-family:var(--f-serif);font-style:italic;font-size:calc(22px*var(--k));line-height:1.65;color:#3C2A30}
+.ora-orn{margin:22px auto 26px;color:#B0707E;display:flex;justify-content:center}
+.pontos{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+.pontos i{width:8px;height:8px;border-radius:50%;background:#E3C7CC}
+.pontos i.on{width:22px;border-radius:4px;background:#8C3B4A}
+.app.casal .btn-prim.btn-vinho{background:#8C3B4A;color:#fff;box-shadow:0 10px 24px rgba(90,36,51,.25)}
+.arv-casal{margin:12px auto 0;width:min(300px,82vw);aspect-ratio:1;border-radius:28px;background:radial-gradient(circle at 50% 60%,#FFFDF8 0 55%,#F7ECEC 100%);border:1px solid #EBD3D6;padding:12px}
+.arv-casal img{width:100%;height:100%;object-fit:contain;display:block}
+.fase-nome{margin:10px 0 0;text-align:center;font-family:var(--f-serif);font-style:italic;color:#8C3B4A;font-size:17px}
+.grupo-dev{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.grupo-dev small{color:#7E6E55;font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase}
+.dev-op{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border:1px solid #E5DDCD;border-radius:15px;background:#FFFCF5;font:600 16px var(--f-sans,inherit);color:#2B4138;text-align:left;cursor:pointer}
+.dev-op .b{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.dev-op .b.g{background:#E6EFE9;color:#315745}.dev-op .b.c{background:#F3DDE0;color:#8C3B4A}
+.dev-op.on{border:2px solid #8C3B4A}
+.dev-op.on.og{border-color:#315745}.dev-op.on.og .ok{color:#315745}
+.dev-op .ok{margin-left:auto;color:#8C3B4A;font-size:13px;font-weight:700}

@@ -14,8 +14,13 @@
     menu: false,
     login: { aba: "entrar", erro: "", nome: "", usuario: "" },
     timer: { min: 3, secs: 180, run: false, iv: null },
-    share: { tab: "v", modelo: 0, chave: "", url: "" }
+    share: { tab: "v", modelo: 0, chave: "", url: "" },
+    dev: "g",                        // "g" = Gratidão, "c" = Casais
+    concCasal: new Map(),            // dia -> Date (local) da conclusão no Casais
+    etapa2: false                    // momento a dois: etapa 1 (orar) ou 2 (agradecer)
   };
+  const DC = window.DIAS_CASAL || [], ETAPAS = window.ETAPAS_CASAL || [];
+  try { if (localStorage.getItem("g365_dev") === "c") S.dev = "c"; } catch (e) {}
 
   /* ---------- Tamanho do texto ---------- */
   const ESCALAS = [0.92, 1, 1.12, 1.26];
@@ -49,6 +54,23 @@
       dataDia: (n) => G.somarDias(base, n - 1) };
   }
 
+  /* ---------- Regras do Casais: começa quando quiser, um dia por dia ---------- */
+  function CC() {
+    const hoje = G.hoje();
+    const lanc = G.dataISO(S.config.data_lancamento);
+    const pre = hoje < lanc;
+    let inicio = null;
+    S.concCasal.forEach((d) => { if (!inicio || d < inicio) inicio = d; });
+    const lib = pre ? 0 : inicio ? Math.min(365, Math.max(1, G.diasEntre(inicio, hoje) + 1)) : 1;
+    const liberado = Math.min(lib, DC.length);
+    const feito = (n) => S.concCasal.has(n);
+    const nF = S.concCasal.size;
+    let card = Math.max(1, liberado);
+    for (let d = 1; d <= liberado; d++) { if (!feito(d)) { card = d; break; } }
+    const etapa = (n) => ETAPAS.find((e) => n >= e.ini && n <= e.fim) || ETAPAS[0];
+    return { hoje, lanc, pre, inicio, liberado, hojeN: lib, feito, nF, card, etapa, aguardando: lib > DC.length && card > DC.length };
+  }
+
   /* ============================================================
      Navegação (com suporte ao botão voltar do Android)
      ============================================================ */
@@ -65,9 +87,10 @@
     if (!S.user) return;
     pararTimer();
     if (S.menu) { S.menu = false; render(); return; }
+    if (S.tela === "c-mom" && S.etapa2) { S.etapa2 = false; render(true); return; }
     const ant = S.pilha.pop();
     if (ant) { S.tela = ant.tela; S.p = ant.p; }
-    else S.tela = "home", S.p = {};
+    else S.tela = S.dev === "c" ? "c-home" : "home", S.p = {};
     render(true);
   });
 
@@ -88,6 +111,13 @@
     S.perfil = perfil.data || { id: S.user.id, nome: (S.user.user_metadata || {}).nome || "", usuario: (S.user.user_metadata || {}).usuario || "", criado_em: S.user.created_at, is_admin: false };
     S.conclusoes = new Map();
     (prog.data || []).forEach((r) => S.conclusoes.set(r.dia, G.dataLocalDeTimestamp(r.concluido_em)));
+    S.concCasal = new Map();
+    if (S.perfil.acesso_casal) {
+      try {
+        const pc = await sb.from("progresso_casal").select("dia, concluido_em").eq("user_id", S.user.id);
+        (pc.data || []).forEach((r) => S.concCasal.set(r.dia, G.dataLocalDeTimestamp(r.concluido_em)));
+      } catch (e) {}
+    } else S.dev = "g";
     sb.rpc("registrar_acesso").then(() => {}, () => {});
   }
 
@@ -96,11 +126,14 @@
      ============================================================ */
   const selo = (cls = "") => `<span class="selo ${cls}">${ic("folha", cls === "p" ? 15 : cls === "g" ? 28 : 18)}</span>`;
   const cab = (titulo) => `<header class="cab"><button class="btn-icone" data-acao="voltar" aria-label="Voltar">${ic("voltar", 22)}</button><strong>${esc(titulo)}</strong>${selo("p")}</header>`;
-  const nav = (ativo) => `<nav class="nav" aria-label="Navegação principal">
-      <button class="${ativo === "home" ? "ativo" : ""}" data-acao="nav-home">${ic("casa", 22, 1.7)}Início</button>
-      <button class="${ativo === "dev" ? "ativo" : ""}" data-acao="nav-hoje">${ic("livro", 22, 1.7)}Hoje</button>
-      <button class="${ativo === "prog" ? "ativo" : ""}" data-acao="nav-prog">${ic("bussola", 22, 1.7)}Progresso</button>
-    </nav>`;
+  const nav = (ativo) => { const px = S.dev === "c" ? "c-" : ""; return `<nav class="nav" aria-label="Navegação principal">
+      <button class="${ativo === "home" ? "ativo" : ""}" data-acao="${px}nav-home">${ic("casa", 22, 1.7)}Início</button>
+      <button class="${ativo === "dev" ? "ativo" : ""}" data-acao="${px}nav-hoje">${ic("livro", 22, 1.7)}Hoje</button>
+      <button class="${ativo === "prog" ? "ativo" : ""}" data-acao="${px}nav-prog">${ic("bussola", 22, 1.7)}Progresso</button>
+    </nav>`; };
+  const BROTO = (t = 18) => `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 15c0-4-3-6.5-7.5-6.5 0 4.2 3 6.5 7.5 6.5z"/><path d="M12 12c0-4.6 3.4-7.5 8-7.5 0 4.8-3.4 7.5-8 7.5z"/><path d="M8.5 21h7"/></svg>`;
+  const seloC = (cls = "") => `<span class="selo ${cls}">${BROTO(cls === "p" ? 17 : 21)}</span>`;
+  const cabC = (titulo) => `<header class="cab"><button class="btn-icone" data-acao="voltar" aria-label="Voltar">${ic("voltar", 22)}</button><strong>${esc(titulo)}</strong>${seloC("p")}</header>`;
   const regua = (nF, clara) => {
     const pct = nF / 365 * 100;
     return `<div class="regua ${clara ? "clara" : ""}">
@@ -195,7 +228,10 @@
     return `<div class="veu" data-acao="menu-fechar"></div>
       <div class="folha" role="dialog" aria-label="Menu">
         <div class="quem"><span class="avatar">${ic("pessoa", 22)}</span><div><strong>${esc(S.perfil.nome || S.perfil.usuario)}</strong><span>@${esc(S.perfil.usuario)}</span></div></div>
-        <button class="opcao" data-acao="nav-prog">Meu percurso</button>
+        ${S.perfil.acesso_casal ? `<div class="grupo-dev"><small>Meus devocionais</small>
+          <button class="dev-op og ${S.dev === "g" ? "on" : ""}" data-acao="dev-g"><span class="b g">${ic("folha", 18)}</span>365 dias de gratidão${S.dev === "g" ? `<span class="ok">aberto</span>` : ""}</button>
+          <button class="dev-op ${S.dev === "c" ? "on" : ""}" data-acao="dev-c"><span class="b c">${BROTO(18)}</span>Devocional de casais${S.dev === "c" ? `<span class="ok">aberto</span>` : ""}</button></div>` : ""}
+        <button class="opcao" data-acao="${S.dev === "c" ? "c-nav-prog" : "nav-prog"}">Meu percurso</button>
         ${S.perfil.is_admin ? `<button class="opcao" data-acao="painel">Painel master</button>` : ""}
         <button class="opcao sair" data-acao="sair">Sair da conta</button>
         <button class="btn-texto" data-acao="menu-fechar">Fechar</button>
@@ -374,6 +410,154 @@
       ${nav("prog")}`;
   }
 
+  /* ============================================================
+     Devocional de Casais
+     ============================================================ */
+  const faseImg = (n) => `img/arvore-casal/fase${String(n).padStart(2, "0")}.png`;
+
+  function cHome() {
+    const c = CC(), [sd] = saudacao();
+    let card;
+    if (c.pre) {
+      const faltam = G.diasEntre(c.hoje, c.lanc);
+      card = `<section class="card-verde" aria-label="Lançamento">
+        <span class="deco"></span>
+        <span class="card-tag">${ic("brilho", 15)} COMEÇA EM ${G.fmtNum(c.lanc)}</span>
+        <div class="contagem"><strong>${faltam}</strong><span>${faltam === 1 ? "dia para começar" : "dias para começar"}</span></div>
+        <p>O devocional de casais já está liberado para vocês. A partir do lançamento, cada dia será liberado no seu tempo.</p>
+      </section>`;
+    } else if (c.aguardando) {
+      card = `<section class="card-verde"><span class="deco"></span><span class="card-tag">${ic("brilho", 15)} DIA ${c.card}</span>
+        <p style="margin-top:14px">O próximo dia está sendo preparado com carinho. Volte em breve.</p></section>`;
+    } else {
+      const n = c.card, d = DC[n - 1], e = c.etapa(n), feitoCard = c.feito(n);
+      const btn = feitoCard ? "Rever o momento de hoje" : n === c.hojeN ? "Abrir momento de hoje" : `Abrir momento do Dia ${n}`;
+      card = `<section class="card-verde" aria-label="Devocional de casais">
+        <span class="deco"></span>
+        <div class="card-topo"><span class="card-tag">${ic("brilho", 15)} DIA ${n}${n === c.hojeN ? " · HOJE" : ""}</span></div>
+        <div class="card-etapa">ETAPA ${e.n} · ${esc(e.tema.toUpperCase())}</div>
+        <div class="aspas">“</div>
+        <blockquote class="card-verso" style="margin:0">${esc(d.v)}</blockquote>
+        <cite class="card-ref">${esc(d.ref)}</cite>
+        <button class="btn-prim" data-acao="c-abrir" data-dia="${n}">${btn} ${ic("seta", 18)}</button>
+        <div class="percurso"><span>${ic("coracao", 16)} ${c.nF}º dia a dois</span><span>${c.nF} / 365</span></div>
+        ${regua(c.nF)}
+      </section>`;
+    }
+    return `<header class="topo-inicio">
+        <div class="marca">${seloC()}<div><small>devocional para</small><strong>casais</strong></div></div>
+        <button class="btn-icone" data-acao="menu" aria-label="Abrir menu">${ic("menu", 22)}</button>
+      </header>
+      <div class="rolagem">
+        <section class="saudacao">
+          <span class="kicker">${esc(G.fmtLonga(c.hoje))}</span>
+          <h1 class="titulo">${sd},<br><em>vamos agradecer juntos?</em></h1>
+          <p class="aux">Alguns minutos a dois, na presença de Deus.</p>
+        </section>
+        ${card}
+        <section class="frase-rodape"><span class="circ">${ic("coracao", 16)}</span><p>“Dois são melhores do que um.” Eclesiastes 4.9</p></section>
+      </div>
+      ${nav("home")}
+      ${S.menu ? telaMenu() : ""}`;
+  }
+
+  function cDev() {
+    const c = CC(), n = S.p.dia, d = DC[n - 1], e = c.etapa(n), leitura = c.feito(n);
+    const titulo = leitura ? `Reler · Dia ${n}` : n === c.hojeN ? "Devocional de hoje" : `Devocional do Dia ${n}`;
+    return `${cabC(titulo)}
+      <div class="rolagem">
+        <span class="tag-dev">${BROTO(14)} Etapa ${e.n} · ${esc(e.tema)}</span>
+        <div class="dia-cab"><span>Dia ${n}</span>${d.subtitulo ? `<strong>${esc(d.subtitulo)}</strong>` : ""}</div>
+        ${leitura ? `<p class="faixa ok">${ic("check", 17, 2.4)} Dia concluído · modo de leitura</p>` : ""}
+        <section class="bloco-verso">
+          <span class="rotulo">Versículo</span>
+          <div class="aspas-g">“</div>
+          <p>${esc(d.v)}</p>
+          <div class="verso-rodape"><cite>— ${esc(d.ref)}</cite></div>
+        </section>
+        <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
+        <section class="conversa"><span class="rotulo">Para conversar</span><p>${esc(d.conversar)}</p></section>
+        ${leitura ? `<section class="oracao-c"><span class="rotulo">Oração do casal</span><p>${esc(d.oracao)}</p></section>` : `<button class="btn-prim largo" style="margin-top:22px" data-acao="c-momento">${ic("relogio", 19)} Iniciar momento a dois</button>`}
+        ${tamCtrl()}
+      </div>
+      ${nav("dev")}`;
+  }
+
+  function cMomento() {
+    const n = S.p.dia, d = DC[n - 1], T = S.timer;
+    const pontos = (e) => `<div class="pontos" aria-label="Etapa ${e} de 2"><i class="${e === 1 ? "on" : ""}"></i><i class="${e === 2 ? "on" : ""}"></i></div>`;
+    if (!S.etapa2) return `${cabC("Momento a dois")}
+      <div class="grat ora-tela">
+        ${pontos(1)}
+        <span class="kicker">orem juntos</span>
+        <p class="aux" style="margin-top:8px">De mãos dadas, leiam juntos em voz alta.</p>
+        <div class="ora-aspas">“</div>
+        <p class="ora-texto">${esc(d.oracao)}</p>
+        <div class="ora-orn">${BROTO(18)}</div>
+        <button class="btn-prim btn-vinho" style="min-width:250px;margin-top:auto" data-acao="c-etapa2">Oramos juntos · continuar ${ic("seta", 18)}</button>
+      </div>`;
+    return `${cabC("Momento a dois")}
+      <div class="grat">
+        ${pontos(2)}
+        <span class="kicker">agradeçam um pelo outro</span>
+        <h1 class="titulo m">Agora, cada um<br><em>agradeça.</em></h1>
+        <p class="aux">Fechem os olhos e agradeçam a Deus pelo seu cônjuge, com suas palavras.</p>
+        <div class="anel" id="anel"><div><small class="r">tempo a dois</small><strong id="tempo">00:00</strong><small class="s" id="tempo-sub"></small></div></div>
+        <div class="chips" role="group" aria-label="Escolher duração">${[3, 4, 5].map((m) => `<button class="chip ${T.min === m ? "ativo" : ""}" data-acao="min" data-min="${m}">${m} min</button>`).join("")}</div>
+        <p class="frase-ouro">“Senhor, obrigado por quem está ao meu lado…”</p>
+        <button class="btn-prim" style="min-width:230px" data-acao="timer" id="btn-timer"></button>
+        <button class="btn-texto" style="margin-top:16px" data-acao="c-concluir">${ic("check", 17)} Marcar dia como concluído</button>
+      </div>`;
+  }
+
+  function cProg() {
+    const c = CC(), nF = c.nF;
+    const atual = c.pre ? ETAPAS[0] : c.etapa(Math.min(c.card, 365));
+    const linhas = ETAPAS.map((e) => {
+      const total = e.fim - e.ini + 1;
+      let feitos = 0; for (let n = e.ini; n <= e.fim; n++) if (c.feito(n)) feitos++;
+      const tem = feitos > 0, completo = feitos === total, eAtual = e.n === atual.n && !c.pre, futuro = e.n > atual.n;
+      return `<button class="mes ${eAtual ? "atual" : ""} ${futuro ? "futuro" : ""} ${tem ? "" : "sem"}" ${tem ? `data-acao="c-etapa" data-e="${e.n}"` : 'tabindex="-1"'} aria-label="Etapa ${e.n}, ${esc(e.tema)}: ${feitos} de ${total} dias">
+          <span>Etapa ${e.n}</span><span class="barra"><i style="width:${(feitos / total * 100).toFixed(1)}%"></i></span>
+          <span class="qtd ${completo ? "" : "n"}">${completo ? BROTO(17) : `${feitos} de ${total}`}</span>
+          <span class="chev" style="opacity:${tem ? 1 : 0}">${ic("seta", 16, 2)}</span></button>`;
+    }).join("");
+    const feitoAgora = S.p.feitoDia;
+    return `${cabC("Nosso percurso")}
+      <div class="rolagem" style="padding-top:24px">
+        <span class="kicker">a árvore do casal</span>
+        <h1 class="titulo m">Etapa ${atual.n} · <em>${esc(atual.tema)}</em></h1>
+        <div class="arv-casal"><img src="${faseImg(atual.n)}" alt="Árvore do casal, fase ${atual.n}: ${esc(atual.fase)}"></div>
+        <p class="fase-nome">Fase ${atual.n} de 12 · ${esc(atual.fase)}</p>
+        <div class="prog-num" style="margin-top:18px"><strong>${nF}</strong><span>/ 365 dias</span></div>
+        ${regua(nF, true)}
+        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} Dia ${feitoAgora} marcado como concluído</p>` : `<p class="aux" style="margin-top:14px">A cada etapa, a árvore do casal ganha uma nova fase: do terreno preparado até os frutos.</p>`}
+        <section class="meses">
+          <div class="meses-cab"><div><span class="kicker claro">12 etapas · 365 dias</span><h2>Nossa caminhada a dois</h2></div><span style="color:#F3C9D0">${BROTO(22)}</span></div>
+          <div style="margin-top:14px">${linhas}</div>
+          <p>Toque em uma etapa para reler os dias concluídos.</p>
+        </section>
+        <section class="lembranca"><span class="kicker">uma lembrança para levar</span><p>“Um cordão de três dobras não se rompe com facilidade.”</p><cite>Eclesiastes 4.12</cite></section>
+      </div>
+      ${nav("prog")}`;
+  }
+
+  function cEtapa() {
+    const c = CC(), e = ETAPAS.find((x) => x.n === S.p.e) || ETAPAS[0];
+    const dias = []; for (let n = e.ini; n <= e.fim; n++) if (c.feito(n) && DC[n - 1]) dias.push(n);
+    return `${cabC(`Etapa ${e.n}`)}
+      <div class="rolagem" style="padding-top:24px">
+        <span class="kicker">dias concluídos</span>
+        <h1 class="titulo m" style="margin-bottom:18px">Reler · <em>${esc(e.tema)}</em></h1>
+        ${dias.length ? "" : `<p class="aux">Os dias que vocês concluírem vão aparecer aqui.</p>`}
+        <div class="lista-dias">${dias.map((n) => `<button class="item-dia" data-acao="c-abrir" data-dia="${n}">
+            <span class="num"><small>DIA</small><b>${n}</b></span>
+            <span class="tx"><strong>${esc(DC[n - 1].ref)}</strong><span>${esc(DC[n - 1].titulo.charAt(0) + DC[n - 1].titulo.slice(1).toLowerCase())}</span></span>
+            <span style="color:#A8505F">${ic("seta", 18, 2)}</span></button>`).join("")}</div>
+      </div>
+      ${nav("prog")}`;
+  }
+
   /* ---------- Compartilhar ---------- */
   function conteudoShare() {
     const c = C(), tab = S.share.tab, n = S.p.dia || c.card;
@@ -499,12 +683,18 @@
       case "mes": html = telaMes(); break;
       case "arvore": html = telaArvore(); break;
       case "share": html = telaShare(); break;
+      case "c-home": html = cHome(); break;
+      case "c-dev": html = cDev(); break;
+      case "c-mom": html = cMomento(); break;
+      case "c-prog": html = cProg(); break;
+      case "c-etapa": html = cEtapa(); break;
       case "config": html = `<div class="carregando" style="padding:30px;text-align:center;line-height:1.6">Preencha o arquivo <b>js/config.js</b> com os dados do Supabase para usar o app.</div>`; break;
       default: html = `<div class="carregando">Carregando…</div>`;
     }
+    raiz.classList.toggle("casal", S.dev === "c" && S.tela !== "login");
     raiz.innerHTML = `<div class="tela">${html}</div><div class="toast" id="toast" role="status" aria-live="polite"></div>`;
     if (topo) { const r = raiz.querySelector(".rolagem, .grat, .login"); if (r) r.scrollTop = 0; }
-    if (S.tela === "grat") desenharTimer();
+    if (S.tela === "grat" || (S.tela === "c-mom" && S.etapa2)) desenharTimer();
     if (S.tela === "share") atualizarPrevia();
   }
 
@@ -571,6 +761,33 @@
       case "copiar-msg": { const ok = await G.copiar(conteudoShare().msg); G.toast(ok ? "Mensagem copiada. É só colar no WhatsApp junto com a imagem." : "Não foi possível copiar."); break; }
       case "tam-menos": tam = Math.max(0, tam - 1); aplicarTam(); break;
       case "tam-mais": tam = Math.min(3, tam + 1); aplicarTam(); break;
+      /* ---------- Casais ---------- */
+      case "dev-g": S.dev = "g"; try { localStorage.setItem("g365_dev", "g"); } catch (e) {} ir("home", {}, { raiz: true }); break;
+      case "dev-c": S.dev = "c"; try { localStorage.setItem("g365_dev", "c"); } catch (e) {} ir("c-home", {}, { raiz: true }); break;
+      case "c-nav-home": ir("c-home", {}, { raiz: true }); break;
+      case "c-nav-prog": ir("c-prog", {}, { raiz: true }); break;
+      case "c-nav-hoje": {
+        const cc = CC();
+        if (cc.pre) G.toast(`O devocional de casais começa em ${G.fmtNum(cc.lanc)}.`);
+        else if (cc.aguardando) G.toast("O próximo dia está sendo preparado. Volte em breve.");
+        else ir("c-dev", { dia: cc.card }, { raiz: true });
+        break;
+      }
+      case "c-abrir": { const n = +el.dataset.dia, cc = CC(); if (n >= 1 && n <= cc.liberado) ir("c-dev", { dia: n }); break; }
+      case "c-momento": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { dia: S.p.dia }); break;
+      case "c-etapa2": S.etapa2 = true; try { history.pushState({ e2: 1 }, ""); } catch (e) {} render(true); break;
+      case "c-etapa": ir("c-etapa", { e: +el.dataset.e }); break;
+      case "c-concluir": {
+        const n = S.p.dia;
+        if (S.concCasal.has(n)) { ir("c-prog", { feitoDia: n }, { raiz: true }); break; }
+        el.disabled = true;
+        pararTimer();
+        const { error } = await sb.from("progresso_casal").insert({ user_id: S.user.id, dia: n });
+        if (error && !String(error.message || "").toLowerCase().includes("duplicate")) { el.disabled = false; G.toast(G.traduzirErro(error)); break; }
+        S.concCasal.set(n, G.hoje());
+        ir("c-prog", { feitoDia: n }, { raiz: true });
+        break;
+      }
     }
   });
 
@@ -602,7 +819,7 @@
       S.user = res.data.user;
       L.erro = ""; L.nome = ""; L.usuario = "";
       await carregarTudo();
-      S.pilha = []; S.tela = "home"; S.p = {};
+      S.pilha = []; S.tela = S.dev === "c" ? "c-home" : "home"; S.p = {};
       render(true);
     } catch (e) {
       falha(G.traduzirErro(e));
@@ -610,7 +827,7 @@
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && S.user && S.tela === "home") render();
+    if (document.visibilityState === "visible" && S.user && (S.tela === "home" || S.tela === "c-home")) render();
   });
 
   /* ============================================================
@@ -623,7 +840,7 @@
       if (data.session) {
         S.user = data.session.user;
         await carregarTudo();
-        S.tela = "home";
+        S.tela = S.dev === "c" ? "c-home" : "home";
       } else {
         await carregarConfigPublica();
         S.tela = "login";

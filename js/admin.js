@@ -37,7 +37,8 @@
         inicio: grupo ? `${G.fmtNum(lanc)} (grupo)` : primeiro ? G.fmtNum(primeiro) : "no 1º concluído",
         feitos, pct: G.pctTxt(feitos), largura: Math.max(feitos / 365 * 100, feitos ? 2 : 0).toFixed(1),
         prox: pre ? "—" : feitos >= 365 ? "Concluiu" : atras <= 0 ? `Dia ${feitos + 1}, amanhã` : `Dia ${feitos + 1}`,
-        acesso: acessoTxt(p.ultimo_acesso), status, cls, cat, emDiaHoje: !pre && feitos > 0 && atras <= 0
+        acesso: acessoTxt(p.ultimo_acesso), status, cls, cat, emDiaHoje: !pre && feitos > 0 && atras <= 0,
+        casal: !!p.acesso_casal, feitosCasal: p.feitos_casal || 0
       };
     });
   }
@@ -82,15 +83,16 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="busca" id="busca" type="search" placeholder="Nome ou usuário" value="${esc(S.busca)}" aria-label="Buscar participante"><button class="btn-borda" data-acao="exportar">Exportar lista</button></div>
       </div>
       <div class="tabela-wrap"><table class="tabela">
-        <thead><tr><th>Participante</th><th>Cadastro</th><th>Início (Dia 1)</th><th>Progresso</th><th>Próximo dia</th><th>Último acesso</th><th>Situação</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Participante</th><th>Cadastro</th><th>Início (Dia 1)</th><th>Progresso</th><th>Próximo dia</th><th>Último acesso</th><th>Situação</th><th>Casais</th><th>Ações</th></tr></thead>
         <tbody>${vis.length ? vis.map((r) => `<tr>
           <td><strong>${esc(r.nome)}</strong><small>@${esc(r.usuario)}</small></td>
           <td>${r.cad}</td><td>${esc(r.inicio)}</td>
           <td><div class="mini-regua"><span class="t"><i style="width:${r.largura}%"></i></span><strong>${r.feitos}/365</strong><small style="display:inline">${r.pct}</small></div></td>
           <td>${esc(r.prox)}</td><td>${esc(r.acesso)}</td>
           <td><span class="etiqueta ${r.cls}">${esc(r.status)}</span></td>
+          <td><div style="display:flex;align-items:center;gap:10px;white-space:nowrap"><button class="switch" role="switch" aria-checked="${r.casal ? "true" : "false"}" aria-label="Acesso ao devocional de casais de ${esc(r.nome)}" data-acao="casal" data-id="${r.id}"></button><small style="display:inline">${r.casal ? `${r.feitosCasal}/365` : "sem acesso"}</small></div></td>
           <td><button class="btn-borda" style="min-height:40px;white-space:nowrap" data-acao="reset" data-id="${r.id}">Redefinir senha</button></td>
-        </tr>`).join("") : `<tr><td colspan="8" style="color:var(--suave)">Nenhum participante encontrado.</td></tr>`}</tbody>
+        </tr>`).join("") : `<tr><td colspan="9" style="color:var(--suave)">Nenhum participante encontrado.</td></tr>`}</tbody>
       </table></div>
       <p class="p-txt" style="font-size:14px">Os participantes não veem esta tela nem o progresso uns dos outros.</p>
     </section>`;
@@ -216,10 +218,20 @@
     }
     else if (a === "exportar") {
       const L = linhas();
-      const linhasCsv = [["Nome", "Usuário", "Cadastro", "Início", "Dias concluídos", "Percentual", "Próximo dia", "Último acesso", "Situação"]]
-        .concat(L.map((r) => [r.nome, r.usuario, r.cad, r.inicio, r.feitos, r.pct, r.prox, r.acesso, r.status]));
+      const linhasCsv = [["Nome", "Usuário", "Cadastro", "Início", "Dias concluídos", "Percentual", "Próximo dia", "Último acesso", "Situação", "Casais", "Dias (casais)"]]
+        .concat(L.map((r) => [r.nome, r.usuario, r.cad, r.inicio, r.feitos, r.pct, r.prox, r.acesso, r.status, r.casal ? "Liberado" : "Sem acesso", r.casal ? r.feitosCasal : ""]));
       const csv = "\uFEFF" + linhasCsv.map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\r\n");
       G.baixar(new Blob([csv], { type: "text/csv;charset=utf-8" }), `participantes-${G.fmtNum(G.hoje()).replace(/\//g, "-")}.csv`);
+    }
+    else if (a === "casal") {
+      const p = S.pessoas.find((x) => x.id === el.dataset.id); if (!p) return;
+      const novo = !p.acesso_casal;
+      el.disabled = true;
+      const { error } = await sb.rpc("admin_acesso_casal", { p_id: p.id, p_valor: novo });
+      el.disabled = false;
+      if (error) return G.toast(G.traduzirErro(error));
+      p.acesso_casal = novo; render();
+      G.toast(novo ? `Devocional de casais liberado para ${p.nome}.` : `Acesso ao devocional de casais retirado de ${p.nome}.`);
     }
     else if (a === "reset") { S.reset = el.dataset.id; S.erro = ""; render(); setTimeout(() => { const i = G.$("#nova-senha"); if (i) i.focus(); }, 50); }
     else if (a === "reset-cancelar") { S.reset = null; S.erro = ""; render(); }
