@@ -479,7 +479,7 @@
           <span class="rotulo">Versículo</span>
           <div class="aspas-g">“</div>
           <p>${esc(d.v)}</p>
-          <div class="verso-rodape"><cite>— ${esc(d.ref)}</cite></div>
+          <div class="verso-rodape"><cite>— ${esc(d.ref)}</cite><button class="btn-pilula" data-acao="c-compartilhar" data-tab="v" ${teste ? 'data-teste="1"' : `data-dia="${n}"`} aria-label="Compartilhar versículo">${ic("enviar", 16)} Compartilhar</button></div>
         </section>
         <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
         <section class="conversa"><span class="rotulo">Para conversar</span>${perguntas(d.conversar)}</section>
@@ -543,7 +543,9 @@
         <p class="fase-nome">Fase ${atual.n} de 12 · ${esc(atual.fase)}</p>
         <div class="prog-num" style="margin-top:18px"><strong>${nF}</strong><span>/ 365 dias</span></div>
         ${regua(nF, true)}
-        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} ${teste ? "Dia de teste marcado como concluído" : `Dia ${feitoAgora} marcado como concluído`}</p>` : `<p class="aux" style="margin-top:14px">A cada etapa, a árvore do casal ganha uma nova fase: do terreno preparado até os frutos.</p>`}
+        ${feitoAgora ? `<p class="concluido-msg">${ic("check", 18, 2.4)} ${teste ? "Dia de teste marcado como concluído" : `Dia ${feitoAgora} marcado como concluído`}</p>
+          <button class="btn-prim largo" style="margin-top:10px" data-acao="c-compartilhar" data-tab="v" ${teste ? 'data-teste="1"' : `data-dia="${feitoAgora}"`}>${ic("enviar", 18)} Compartilhar nosso dia</button>` : `<p class="aux" style="margin-top:14px">A cada etapa, a árvore do casal ganha uma nova fase: do terreno preparado até os frutos.</p>`}
+        ${teste || c.pre || !nF ? "" : `<button class="btn-sec largo" style="margin-top:12px" data-acao="c-compartilhar" data-tab="a">${ic("enviar", 18)} Compartilhar nossa árvore</button>`}
         <section class="meses">
           <div class="meses-cab"><div><span class="kicker claro">12 etapas · 365 dias</span><h2>Nossa caminhada a dois</h2></div><span style="color:#F3C9D0">${BROTO(22)}</span></div>
           <div style="margin-top:14px">${linhas}</div>
@@ -571,7 +573,27 @@
   }
 
   /* ---------- Compartilhar ---------- */
+  function conteudoShareCasal() {
+    const cc = CC(), tab = S.share.tab, teste = !!S.p.teste || cc.pre;
+    const n = teste ? 1 : (S.p.dia || cc.card), d = DC[n - 1], e = cc.etapa(n);
+    const link = C().link, marca = "Devocional de casais", base = { tema: "casal", marca, link };
+    const prefixo = teste ? "DIA DE TESTE" : `DIA ${n}`;
+    const arq = `casal-${teste ? "teste" : "dia-" + n}.png`;
+    const frase = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+    if (tab === "e") return { ...base, topo: `${prefixo} · ENSINO DO DIA`, texto: frase(d.titulo), sub: d.conversar, rodape: d.ref.toUpperCase(),
+      msg: `${frase(d.titulo)} (${d.ref})\n\nPara conversar: ${d.conversar}\n\n${marca}: ${link}`, arquivo: arq };
+    if (tab === "a") {
+      const nF = cc.nF, ea = cc.etapa(Math.min(cc.card, 365));
+      return { ...base, topo: "NOSSA ÁRVORE DO CASAL", texto: `Etapa ${ea.n} · ${ea.tema}`, sub: `${nF} ${nF === 1 ? "dia" : "dias"} a dois`,
+        rodape: `FASE ${ea.n} DE 12 · ${ea.fase.toUpperCase()}`, arvoreImg: `img/arvore-casal/fase${String(ea.n).padStart(2, "0")}.png`,
+        msg: `Nossa árvore do casal já está na fase "${ea.fase}": ${nF} ${nF === 1 ? "dia" : "dias"} a dois. 🌱\n\n${marca}: ${link}`, arquivo: "nossa-arvore-do-casal.png" };
+    }
+    return { ...base, topo: `${prefixo} · VERSÍCULO`, texto: `“${d.v}”`, rodape: d.ref.toUpperCase(),
+      msg: `“${d.v}” — ${d.ref}\n\n${marca}: ${link}`, arquivo: arq };
+  }
+
   function conteudoShare() {
+    if (S.dev === "c") return conteudoShareCasal();
     const c = C(), tab = S.share.tab, n = S.p.dia || c.card;
     const d = c.pre ? EX : DIAS[n - 1];
     const prefixo = c.pre ? "DIA DE EXEMPLO" : `DIA ${n}`;
@@ -591,15 +613,19 @@
   }
 
   function telaShare() {
-    const c = C(), tab = S.share.tab;
-    const abas = (c.pre ? [["c", "Convite"], ["v", "Versículo"], ["t", "Verdade prática"]] : [["v", "Versículo"], ["t", "Verdade prática"], ["a", "Minha árvore"]]);
+    const casal = S.dev === "c", c = C(), tab = S.share.tab;
+    const testeC = casal && (!!S.p.teste || CC().pre);
+    const abas = casal ? (testeC ? [["v", "Versículo"], ["e", "Ensino do dia"]] : [["v", "Versículo"], ["e", "Ensino do dia"], ["a", "Nossa árvore"]])
+      : (c.pre ? [["c", "Convite"], ["v", "Versículo"], ["t", "Verdade prática"]] : [["v", "Versículo"], ["t", "Verdade prática"], ["a", "Minha árvore"]]);
+    const lista = casal ? G.MODELOS_CASAL : G.MODELOS;
+    if (S.share.modelo >= lista.length) S.share.modelo = 0;
     const conv = tab === "c" ? conteudoShare() : null;
-    return `${cab("Compartilhar")}
+    return `${casal ? cabC("Compartilhar") : cab("Compartilhar")}
       <div class="rolagem share" style="padding-bottom:calc(30px + var(--base))">
         <div class="previa-wrap"><div class="previa" id="previa" aria-label="Prévia da imagem"></div></div>
         <div class="abas-share">${abas.map(([k, l]) => `<button class="${tab === k ? "ativo" : ""}" data-acao="share-tab" data-tab="${k}">${l}</button>`).join("")}</div>
         <span class="kicker">Escolha o modelo</span>
-        <div class="modelos">${G.MODELOS.map((m, i) => `<button class="${S.share.modelo === i ? "ativo" : ""}" data-acao="modelo" data-i="${i}" aria-label="Modelo ${m.nome}"><span class="amostra" style="background:${m.amostra};color:${m.destaque}">“</span>${m.nome}</button>`).join("")}</div>
+        <div class="modelos">${lista.map((m, i) => `<button class="${S.share.modelo === i ? "ativo" : ""}" data-acao="modelo" data-i="${i}" aria-label="Modelo ${m.nome}"><span class="amostra" style="background:${m.amostra};color:${m.destaque}">“</span>${m.nome}</button>`).join("")}</div>
         <div class="acoes">
           <button data-acao="enviar" data-para="stories"><span class="bola">${ic("enviar", 22)}</span>Stories</button>
           <button data-acao="enviar" data-para="whatsapp"><span class="bola">${ic("whats", 22)}</span>WhatsApp</button>
@@ -615,7 +641,7 @@
     const el = document.getElementById("previa");
     if (!el) return;
     const o = conteudoShare();
-    const chave = JSON.stringify([S.share.tab, S.share.modelo, o.texto, o.topo]);
+    const chave = JSON.stringify([S.dev, S.share.tab, S.share.modelo, o.texto, o.topo, o.sub]);
     if (chave === S.share.chave && S.share.url) { el.innerHTML = `<img src="${S.share.url}" alt="">`; return; }
     const id = ++gerando;
     const blob = await G.gerarImagem({ modelo: S.share.modelo, ...o });
@@ -628,7 +654,7 @@
 
   async function enviar(para) {
     const o = conteudoShare();
-    const chave = JSON.stringify([S.share.tab, S.share.modelo, o.texto, o.topo]);
+    const chave = JSON.stringify([S.dev, S.share.tab, S.share.modelo, o.texto, o.topo, o.sub]);
     if (chave !== S.share.chave || !S.share.blob) await atualizarPrevia();
     const blob = S.share.blob;
     if (!blob) return G.toast("Aguarde a imagem ficar pronta.");
@@ -791,6 +817,12 @@
       case "c-momento-teste": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { teste: true }); break;
       case "c-momento": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { dia: S.p.dia }); break;
       case "c-etapa2": S.etapa2 = true; try { history.pushState({ e2: 1 }, ""); } catch (e) {} render(true); break;
+      case "c-compartilhar": {
+        S.share.tab = el.dataset.tab || "v";
+        const p = {}; if (el.dataset.dia) p.dia = +el.dataset.dia; if (el.dataset.teste) p.teste = true;
+        ir("share", p);
+        break;
+      }
       case "c-etapa": ir("c-etapa", { e: +el.dataset.e, teste: !!el.dataset.teste }); break;
       case "c-concluir": {
         if (S.p.teste) { pararTimer(); ir("c-prog", { teste: true, feitoDia: 1 }, { raiz: true }); break; }

@@ -136,8 +136,28 @@
     { nome: "Folha", cor: "#F8F4E9", destaque: "#EBCB8E", escuro: true, amostra: "radial-gradient(circle at 85% 12%, rgba(216,182,121,0.35) 0, rgba(216,182,121,0) 40%), linear-gradient(160deg, #3E6B55, #26473A)" }
   ];
 
-  function fundo(ctx, W, H, i) {
+  /* Modelos do devocional de Casais (tom vinho) */
+  G.MODELOS_CASAL = [
+    { nome: "Vinho", cor: "#FBF1F2", destaque: "#F3C9D0", escuro: true, bg: ["#7A3343", "#5A2433"], amostra: "linear-gradient(160deg, #7A3343, #5A2433)" },
+    { nome: "Rosé", cor: "#4A1E2A", destaque: "#8C3B4A", escuro: false, bg: ["#F9EEEF", "#F1DCDF"], amostra: "linear-gradient(160deg, #F9EEEF, #F1DCDF)" },
+    { nome: "Creme", cor: "#3C2A30", destaque: "#8C3B4A", escuro: false, bg: "#FAF8F2", amostra: "#FAF8F2" },
+    { nome: "Dourado", cor: "#4A1E2A", destaque: "#7A3343", escuro: false, bg: ["#EED9B2", "#D3B07A"], amostra: "linear-gradient(160deg, #EED9B2, #D3B07A)" },
+    { nome: "Noite", cor: "#F6E6E9", destaque: "#E7A9B3", escuro: true, bg: ["#3A1820", "#22101A"], amostra: "linear-gradient(160deg, #3A1820, #22101A)" }
+  ];
+
+  function fundo(ctx, W, H, i, M) {
     let g;
+    if (M && M.bg) {
+      if (Array.isArray(M.bg)) { g = ctx.createLinearGradient(0, 0, W * 0.36, H); g.addColorStop(0, M.bg[0]); g.addColorStop(1, M.bg[1]); }
+      else g = M.bg;
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.strokeStyle = M.escuro ? "rgba(243,201,208,0.28)" : "rgba(140,59,74,0.16)";
+      ctx.lineWidth = 3;
+      [260, 330, 400].forEach((r, k) => { ctx.globalAlpha = 1 - k * 0.3; ctx.beginPath(); ctx.arc(W - 140, -60, r, 0, Math.PI * 2); ctx.stroke(); });
+      ctx.restore();
+      return;
+    }
     switch (i) {
       case 0: g = ctx.createLinearGradient(0, 0, W * 0.36, H); g.addColorStop(0, "#315745"); g.addColorStop(1, "#1F3D31"); break;
       case 1: g = "#FAF8F2"; break;
@@ -177,7 +197,8 @@
 
   G.gerarImagem = async (o) => {
     // o = { modelo, topo, texto, sub, rodape, link, arvoreN }
-    const W = 1080, H = 1920, M = G.MODELOS[o.modelo] || G.MODELOS[0];
+    const casal = o.tema === "casal", lista = casal ? G.MODELOS_CASAL : G.MODELOS;
+    const W = 1080, H = 1920, M = lista[o.modelo] || lista[0];
     try {
       await Promise.all([
         document.fonts.load('400 64px "Libre Baskerville"'),
@@ -187,16 +208,23 @@
     } catch (e) {}
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const ctx = c.getContext("2d");
-    fundo(ctx, W, H, o.modelo);
+    fundo(ctx, W, H, o.modelo, casal ? M : null);
     ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
     // selo
     ctx.save();
     ctx.strokeStyle = M.destaque; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(W / 2, 190, 62, 0, Math.PI * 2); ctx.stroke();
-    ctx.translate(W / 2, 190); ctx.rotate(-10 * Math.PI / 180); ctx.translate(-36, -36); ctx.scale(3, 3);
-    ctx.lineWidth = 1.8; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.stroke(new Path2D("M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"));
-    ctx.stroke(new Path2D("M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"));
+    if (casal) {
+      // broto de duas folhas (símbolo do devocional de casais)
+      ctx.translate(W / 2, 190); ctx.translate(-36, -38); ctx.scale(3, 3);
+      ctx.lineWidth = 1.7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ["M12 21v-9", "M12 15c0-4-3-6.5-7.5-6.5 0 4.2 3 6.5 7.5 6.5z", "M12 12c0-4.6 3.4-7.5 8-7.5 0 4.8-3.4 7.5-8 7.5z", "M8.5 21h7"].forEach((d) => ctx.stroke(new Path2D(d)));
+    } else {
+      ctx.translate(W / 2, 190); ctx.rotate(-10 * Math.PI / 180); ctx.translate(-36, -36); ctx.scale(3, 3);
+      ctx.lineWidth = 1.8; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.stroke(new Path2D("M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"));
+      ctx.stroke(new Path2D("M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"));
+    }
     ctx.restore();
     // rótulo superior
     ctx.fillStyle = M.destaque;
@@ -214,7 +242,7 @@
     const subLinhas = o.sub ? quebrar(ctx, o.sub, 840) : [];
     ctx.font = '700 34px "DM Sans", sans-serif';
     const refLinhas = o.rodape ? quebrar(ctx, o.rodape, 860) : [];
-    const arvH = o.arvoreN != null ? 620 : 0;
+    const arvH = (o.arvoreN != null || o.arvoreImg) ? 620 : 0;
     const altura = arvH + (arvH ? 40 : 0) + linhas.length * lh + (subLinhas.length ? 40 + subLinhas.length * 62 : 0) + (refLinhas.length ? 50 + refLinhas.length * 52 : 0);
     let y = Math.max(420, (H - altura) / 2 + 40);
     if (arvH) {
@@ -223,9 +251,13 @@
       const bx = (W - 680) / 2, by = y - 20;
       ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, 680, 660, 48) : ctx.rect(bx, by, 680, 660); ctx.fill();
       ctx.restore();
-      const svg = G.arvoreSVG(o.arvoreN, "img", 620);
-      const im = await carregarImagem("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
-      ctx.drawImage(im, (W - 620) / 2, y, 620, 620);
+      if (o.arvoreImg) {
+        try { const im = await carregarImagem(o.arvoreImg); ctx.drawImage(im, (W - 600) / 2, y + 10, 600, 600); } catch (e) {}
+      } else {
+        const svg = G.arvoreSVG(o.arvoreN, "img", 620);
+        const im = await carregarImagem("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+        ctx.drawImage(im, (W - 620) / 2, y, 620, 620);
+      }
       y += arvH + 70;
     }
     ctx.fillStyle = M.cor;
@@ -245,7 +277,7 @@
     // rodapé
     ctx.fillStyle = M.cor;
     ctx.font = '400 44px "Libre Baskerville", Georgia, serif';
-    ctx.fillText("365 dias de gratidão", W / 2, H - 170);
+    ctx.fillText(o.marca || "365 dias de gratidão", W / 2, H - 170);
     if (o.link) {
       ctx.font = '500 30px "DM Sans", sans-serif'; ctx.globalAlpha = 0.85;
       ctx.fillText(o.link.replace(/^https?:\/\//, ""), W / 2, H - 115);

@@ -431,3 +431,12 @@ button[disabled] { opacity: 0.6; cursor: default; }
 .app.casal .mes { grid-template-columns: 74px 1fr 64px 16px; }
 .app.casal .mes > span:first-child { white-space: nowrap; }
 .conversa p + p { margin-top: 10px; }
+/* Compartilhar no devocional de casais */
+.app.casal .abas-share button.ativo { border-color: #B0707E; background: #F6DCE0; color: #5A2433; }
+.app.casal .modelos { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.app.casal .modelos button { color: #5A2433; }
+.app.casal .modelos .amostra { color: #F3C9D0; }
+.app.casal .modelos button.ativo .amostra { box-shadow: 0 0 0 3px #A8505F; }
+.app.casal .acoes .bola { background: #F6DCE0; color: #7A3343; }
+.app.casal .btn-pilula { color: #7A3343; border-color: #E3C7CC; }
+.app.casal .btn-sec { color: #5A2433; border-color: #E3C7CC; }
