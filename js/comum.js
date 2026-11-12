@@ -277,12 +277,7 @@
     // rodapé
     ctx.fillStyle = M.cor;
     ctx.font = '400 44px "Libre Baskerville", Georgia, serif';
-    ctx.fillText(o.marca || "365 dias de gratidão", W / 2, H - 170);
-    if (o.link) {
-      ctx.font = '500 30px "DM Sans", sans-serif'; ctx.globalAlpha = 0.85;
-      ctx.fillText(o.link.replace(/^https?:\/\//, ""), W / 2, H - 115);
-      ctx.globalAlpha = 1;
-    }
+    ctx.fillText(o.marca || "365 dias de gratidão", W / 2, H - 140);
     return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
   };
 

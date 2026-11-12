@@ -87,7 +87,6 @@
     if (!S.user) return;
     pararTimer();
     if (S.menu) { S.menu = false; render(); return; }
-    if (S.tela === "c-mom" && S.etapa2) { S.etapa2 = false; render(true); return; }
     const ant = S.pilha.pop();
     if (ant) { S.tela = ant.tela; S.p = ant.p; }
     else S.tela = S.dev === "c" ? "c-home" : "home", S.p = {};
@@ -483,7 +482,8 @@
         </section>
         <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
         <section class="conversa"><span class="rotulo">Para conversar</span>${perguntas(d.conversar)}</section>
-        ${leitura ? `<section class="oracao-c"><span class="rotulo">Oração do casal</span><p>${esc(d.oracao)}</p></section>` : `<button class="btn-prim largo" style="margin-top:22px" data-acao="${teste ? "c-momento-teste" : "c-momento"}">${ic("relogio", 19)} Iniciar momento a dois</button>`}
+        <section class="oracao-c"><span class="rotulo">${leitura ? "Oração do casal" : "Orem juntos"}</span>${leitura ? "" : `<small class="ora-dica">De mãos dadas, leiam juntos em voz alta.</small>`}<p>${esc(d.oracao)}</p></section>
+        ${leitura ? "" : `<button class="btn-prim largo" style="margin-top:22px" data-acao="${teste ? "c-momento-teste" : "c-momento"}">${ic("relogio", 19)} Iniciar momento a dois</button>`}
         ${tamCtrl()}
       </div>
       ${nav("dev")}`;
@@ -507,7 +507,6 @@
     return `${cabC("Momento a dois")}
       <div class="grat">
         ${aviso}
-        ${pontos(2)}
         <span class="kicker">agradeçam um pelo outro</span>
         <h1 class="titulo m">Agora, cada um<br><em>agradeça.</em></h1>
         <p class="aux">Fechem os olhos e agradeçam a Deus pelo seu cônjuge, com suas palavras.</p>
@@ -814,8 +813,8 @@
       case "c-abrir": { const n = +el.dataset.dia, cc = CC(); if (n >= 1 && n <= cc.liberado) ir("c-dev", { dia: n }); break; }
       case "c-teste": ir("c-dev", { teste: true }); break;
       case "c-reler-teste": ir("c-dev", { teste: true, leitura: true }); break;
-      case "c-momento-teste": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { teste: true }); break;
-      case "c-momento": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = false; ir("c-mom", { dia: S.p.dia }); break;
+      case "c-momento-teste": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = true; ir("c-mom", { teste: true }); break;
+      case "c-momento": S.timer = { min: S.timer.min, secs: S.timer.min * 60, run: false, iv: null }; S.etapa2 = true; ir("c-mom", { dia: S.p.dia }); break;
       case "c-etapa2": S.etapa2 = true; try { history.pushState({ e2: 1 }, ""); } catch (e) {} render(true); break;
       case "c-compartilhar": {
         S.share.tab = el.dataset.tab || "v";

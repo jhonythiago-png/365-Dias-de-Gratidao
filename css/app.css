@@ -440,3 +440,4 @@ button[disabled] { opacity: 0.6; cursor: default; }
 .app.casal .acoes .bola { background: #F6DCE0; color: #7A3343; }
 .app.casal .btn-pilula { color: #7A3343; border-color: #E3C7CC; }
 .app.casal .btn-sec { color: #5A2433; border-color: #E3C7CC; }
+.ora-dica { display: block; margin-top: 4px; color: #8C6A72; font-size: 13px; }
