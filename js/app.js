@@ -162,7 +162,7 @@
     const raw = String(v || "").trim();
     if (!raw) return "";
     const u = usuarioDe(raw);
-    if (raw.includes("@")) return u ? `Não precisa de e-mail. Vamos usar só: <b>${esc(u)}</b>` : "Não precisa de e-mail: crie um apelido, por exemplo amanda.";
+    if (raw.includes("@")) return u ? `Não precisa de e-mail. Vamos usar só: <b>${esc(u)}</b>` : "Não precisa de e-mail: crie um apelido, por exemplo jhony.";
     if (u !== raw) return `Seu usuário vai ficar assim: <b>${esc(u)}</b>`;
     return "";
   }
@@ -183,8 +183,8 @@
       <form class="form" id="form-login" novalidate>
         ${criar && !aberto ? `<p class="dica">Os cadastros estão fechados no momento.</p>` : `
         ${criar ? `<div class="aviso-cad">${ic("brilho", 16)}<p>Aqui <b>não usa e-mail</b>. Você escolhe um <b>usuário</b> (um apelido) e uma <b>senha</b>. Anote os dois: é com eles que você entra depois.</p></div>` : ""}
-        ${criar ? `<label class="campo">Seu nome<input id="in-nome" type="text" maxlength="40" autocomplete="name" placeholder="ex.: Amanda" value="${esc(L.nome)}"><small class="ajuda">Como você quer ser chamado no app.</small></label>` : ""}
-        <label class="campo">Usuário<input id="in-usuario" type="text" maxlength="60" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${criar ? "ex.: amanda" : "o usuário que você criou"}" value="${esc(L.usuario)}">
+        ${criar ? `<label class="campo">Seu nome<input id="in-nome" type="text" maxlength="40" autocomplete="name" placeholder="ex.: Jhony" value="${esc(L.nome)}"><small class="ajuda">Como você quer ser chamado no app.</small></label>` : ""}
+        <label class="campo">Usuário<input id="in-usuario" type="text" maxlength="60" autocomplete="${criar ? "off" : "username"}" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${criar ? "ex.: jhony" : "o usuário que você criou"}" value="${esc(L.usuario)}">
           <small class="ajuda">${criar ? "Um apelido para entrar, sem espaço. <b>Não é o seu e-mail.</b>" : "É o usuário que você criou no cadastro, <b>não o e-mail</b>."}</small>
           <small class="ajuda alerta" id="aviso-usuario"${avisoUsuario(L.usuario) ? "" : " hidden"}>${avisoUsuario(L.usuario)}</small></label>
         <label class="campo">Senha<input id="in-senha" type="password" minlength="6" autocomplete="${criar ? "new-password" : "current-password"}" placeholder="${criar ? "crie uma senha" : "a senha que você criou"}">
@@ -193,6 +193,8 @@
         ${L.erro ? `<p class="erro" role="alert">${esc(L.erro)}</p>` : ""}
         <button class="btn-verde" type="submit" id="btn-entrar">${criar ? "Criar conta e começar" : "Entrar"}</button>
         <p class="dica">${criar ? "Sem aprovação: a conta já fica pronta para usar." : "Seu progresso fica salvo na sua conta, em qualquer aparelho."}</p>
+        ${criar ? `<div class="depois-cad"><strong>E depois?</strong><p>Ao criar a conta, você já entra direto no app. Nas próximas vezes, toque em <b>Entrar</b> e use o mesmo usuário e a mesma senha.</p>
+          <p class="ex-cad">Exemplo:<br>Usuário: <b>jhony</b><br>Senha: <b>a que você criou</b></p></div>` : ""}
         ${criar ? "" : `<button type="button" class="btn-texto" data-acao="esqueci" style="margin:-4px auto 0;color:var(--verde);font-weight:700;text-decoration:underline;text-underline-offset:3px">Esqueci minha senha</button>`}`}
       </form>
       <p class="credito">Desenvolvido por Jhony Beraldo</p>
@@ -238,7 +240,7 @@
         </section>
         ${S.boasVindas ? `<section class="boas-vindas" role="status">
           <strong>${ic("check", 18, 2.4)} Sua conta está pronta!</strong>
-          <p>Para entrar de novo, use o usuário <b>${esc(S.boasVindas)}</b> e a senha que você criou. Vale anotar.</p>
+          <p>Nas próximas vezes, toque em <b>Entrar</b> e use o usuário <b>${esc(S.boasVindas)}</b> e a senha que você criou. Vale anotar.</p>
           <button class="btn-texto" data-acao="bv-ok">Entendi</button></section>` : ""}
         ${card}
         <section class="frase-rodape"><span class="circ">${ic("coracao", 16)}</span><p>“A gratidão muda o modo como enxergamos o dia que recebemos.”</p></section>
@@ -777,7 +779,7 @@
         break;
       }
       case "aba-entrar": S.login.aba = "entrar"; S.login.erro = ""; render(); break;
-      case "aba-criar": S.login.aba = "criar"; S.login.erro = ""; render(); break;
+      case "aba-criar": S.login.aba = "criar"; S.login.erro = ""; S.login.nome = ""; S.login.usuario = ""; render(); break;
       case "bv-ok": S.boasVindas = null; render(); break;
       case "menu": S.menu = true; try { history.pushState({ m: 1 }, ""); } catch (e) {} render(); break;
       case "menu-fechar": history.back(); break;
@@ -880,7 +882,7 @@
     const nome = (L.nome || "").trim(), usuario = usuarioDe(L.usuario), senha = (document.getElementById("in-senha") || {}).value || "";
     const falha = (m) => { L.erro = m; render(); };
     if (criar && nome.length < 2) return falha("Informe seu nome.");
-    if (!/^[a-z0-9._]{3,20}$/.test(usuario)) return falha(criar ? "Crie um usuário de 3 a 20 letras ou números, sem espaço. Exemplo: amanda" : "Digite o usuário que você criou no cadastro (não é o e-mail).");
+    if (!/^[a-z0-9._]{3,20}$/.test(usuario)) return falha(criar ? "Crie um usuário de 3 a 20 letras ou números, sem espaço. Exemplo: jhony" : "Digite o usuário que você criou no cadastro (não é o e-mail).");
     if (senha.length < 6) return falha("A senha precisa ter pelo menos 6 caracteres.");
     const btn = document.getElementById("btn-entrar"); if (btn) { btn.disabled = true; btn.textContent = "Aguarde…"; }
     try {
