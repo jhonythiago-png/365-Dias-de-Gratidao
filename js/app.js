@@ -152,6 +152,21 @@
   /* ============================================================
      Telas
      ============================================================ */
+  // Se a pessoa digitar um e-mail no campo de usuário, usamos só a parte antes do @
+  function usuarioDe(v) {
+    let u = String(v || "").trim();
+    if (u.includes("@")) u = u.split("@")[0];
+    return G.normalizarUsuario(u).replace(/[^a-z0-9._]/g, "");
+  }
+  function avisoUsuario(v) {
+    const raw = String(v || "").trim();
+    if (!raw) return "";
+    const u = usuarioDe(raw);
+    if (raw.includes("@")) return u ? `Não precisa de e-mail. Vamos usar só: <b>${esc(u)}</b>` : "Não precisa de e-mail: crie um apelido, por exemplo amanda.";
+    if (u !== raw) return `Seu usuário vai ficar assim: <b>${esc(u)}</b>`;
+    return "";
+  }
+
   function telaLogin() {
     const L = S.login, criar = L.aba === "criar", aberto = !S.config || S.config.cadastro_aberto !== false;
     return `<section class="login">
@@ -167,9 +182,14 @@
       </div>
       <form class="form" id="form-login" novalidate>
         ${criar && !aberto ? `<p class="dica">Os cadastros estão fechados no momento.</p>` : `
-        ${criar ? `<label class="campo">Seu nome<input id="in-nome" type="text" maxlength="40" autocomplete="name" placeholder="Como o grupo te conhece" value="${esc(L.nome)}"></label>` : ""}
-        <label class="campo">Usuário<input id="in-usuario" type="text" maxlength="20" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex.: maria.souza" value="${esc(L.usuario)}"></label>
-        <label class="campo">Senha<input id="in-senha" type="password" minlength="6" autocomplete="${criar ? "new-password" : "current-password"}" placeholder="Mínimo de 6 caracteres"></label>
+        ${criar ? `<div class="aviso-cad">${ic("brilho", 16)}<p>Aqui <b>não usa e-mail</b>. Você escolhe um <b>usuário</b> (um apelido) e uma <b>senha</b>. Anote os dois: é com eles que você entra depois.</p></div>` : ""}
+        ${criar ? `<label class="campo">Seu nome<input id="in-nome" type="text" maxlength="40" autocomplete="name" placeholder="ex.: Amanda" value="${esc(L.nome)}"><small class="ajuda">Como você quer ser chamado no app.</small></label>` : ""}
+        <label class="campo">Usuário<input id="in-usuario" type="text" maxlength="60" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${criar ? "ex.: amanda" : "o usuário que você criou"}" value="${esc(L.usuario)}">
+          <small class="ajuda">${criar ? "Um apelido para entrar, sem espaço. <b>Não é o seu e-mail.</b>" : "É o usuário que você criou no cadastro, <b>não o e-mail</b>."}</small>
+          <small class="ajuda alerta" id="aviso-usuario"${avisoUsuario(L.usuario) ? "" : " hidden"}>${avisoUsuario(L.usuario)}</small></label>
+        <label class="campo">Senha<input id="in-senha" type="password" minlength="6" autocomplete="${criar ? "new-password" : "current-password"}" placeholder="${criar ? "crie uma senha" : "a senha que você criou"}">
+          <small class="ajuda">${criar ? "Pelo menos 6 letras ou números." : "A mesma senha que você criou no cadastro."}</small></label>
+        <label class="ver-senha"><input type="checkbox" id="ver-senha"> Mostrar senha</label>
         ${L.erro ? `<p class="erro" role="alert">${esc(L.erro)}</p>` : ""}
         <button class="btn-verde" type="submit" id="btn-entrar">${criar ? "Criar conta e começar" : "Entrar"}</button>
         <p class="dica">${criar ? "Sem aprovação: a conta já fica pronta para usar." : "Seu progresso fica salvo na sua conta, em qualquer aparelho."}</p>
@@ -216,6 +236,10 @@
           <h1 class="titulo">${sd},<br><em>vamos agradecer?</em></h1>
           <p class="aux">${sdTxt}</p>
         </section>
+        ${S.boasVindas ? `<section class="boas-vindas" role="status">
+          <strong>${ic("check", 18, 2.4)} Sua conta está pronta!</strong>
+          <p>Para entrar de novo, use o usuário <b>${esc(S.boasVindas)}</b> e a senha que você criou. Vale anotar.</p>
+          <button class="btn-texto" data-acao="bv-ok">Entendi</button></section>` : ""}
         ${card}
         <section class="frase-rodape"><span class="circ">${ic("coracao", 16)}</span><p>“A gratidão muda o modo como enxergamos o dia que recebemos.”</p></section>
       </div>
@@ -754,6 +778,7 @@
       }
       case "aba-entrar": S.login.aba = "entrar"; S.login.erro = ""; render(); break;
       case "aba-criar": S.login.aba = "criar"; S.login.erro = ""; render(); break;
+      case "bv-ok": S.boasVindas = null; render(); break;
       case "menu": S.menu = true; try { history.pushState({ m: 1 }, ""); } catch (e) {} render(); break;
       case "menu-fechar": history.back(); break;
       case "painel": location.href = "admin.html"; break;
@@ -840,17 +865,22 @@
 
   raiz.addEventListener("input", (ev) => {
     if (ev.target.id === "in-nome") S.login.nome = ev.target.value;
-    if (ev.target.id === "in-usuario") S.login.usuario = ev.target.value;
+    if (ev.target.id === "in-usuario") {
+      S.login.usuario = ev.target.value;
+      const av = document.getElementById("aviso-usuario"), t = avisoUsuario(ev.target.value);
+      if (av) { av.innerHTML = t; av.hidden = !t; }
+    }
+    if (ev.target.id === "ver-senha") { const s = document.getElementById("in-senha"); if (s) s.type = ev.target.checked ? "text" : "password"; }
   });
 
   raiz.addEventListener("submit", async (ev) => {
     if (ev.target.id !== "form-login") return;
     ev.preventDefault();
     const L = S.login, criar = L.aba === "criar";
-    const nome = (L.nome || "").trim(), usuario = G.normalizarUsuario(L.usuario), senha = (document.getElementById("in-senha") || {}).value || "";
+    const nome = (L.nome || "").trim(), usuario = usuarioDe(L.usuario), senha = (document.getElementById("in-senha") || {}).value || "";
     const falha = (m) => { L.erro = m; render(); };
     if (criar && nome.length < 2) return falha("Informe seu nome.");
-    if (!/^[a-z0-9._]{3,20}$/.test(usuario)) return falha("O usuário deve ter de 3 a 20 caracteres: letras, números, ponto ou sublinhado.");
+    if (!/^[a-z0-9._]{3,20}$/.test(usuario)) return falha(criar ? "Crie um usuário de 3 a 20 letras ou números, sem espaço. Exemplo: amanda" : "Digite o usuário que você criou no cadastro (não é o e-mail).");
     if (senha.length < 6) return falha("A senha precisa ter pelo menos 6 caracteres.");
     const btn = document.getElementById("btn-entrar"); if (btn) { btn.disabled = true; btn.textContent = "Aguarde…"; }
     try {
@@ -864,6 +894,7 @@
         if (res.error) throw res.error;
       }
       S.user = res.data.user;
+      if (criar) S.boasVindas = usuario;
       L.erro = ""; L.nome = ""; L.usuario = "";
       await carregarTudo();
       S.pilha = []; S.tela = S.dev === "c" ? "c-home" : "home"; S.p = {};

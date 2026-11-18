@@ -441,3 +441,16 @@ button[disabled] { opacity: 0.6; cursor: default; }
 .app.casal .btn-pilula { color: #7A3343; border-color: #E3C7CC; }
 .app.casal .btn-sec { color: #5A2433; border-color: #E3C7CC; }
 .ora-dica { display: block; margin-top: 4px; color: #8C6A72; font-size: 13px; }
+/* Cadastro mais claro */
+.aviso-cad { display: flex; gap: 10px; align-items: flex-start; background: #FBF3E1; border: 1px solid #EBD9B0; color: #5B4A26; border-radius: 16px; padding: 12px 14px; font-size: 14.5px; line-height: 1.5; }
+.aviso-cad p { margin: 0; }
+.aviso-cad svg { flex: none; margin-top: 2px; color: var(--dourado); }
+.ajuda { font-weight: 500; font-size: 13.5px; color: var(--suave); line-height: 1.45; }
+.ajuda b { color: #44594D; }
+.ajuda.alerta { color: #8A5A12; background: #FFF4DC; border-radius: 10px; padding: 6px 10px; }
+.ver-senha { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--suave); margin-top: -4px; }
+.ver-senha input { width: 18px; height: 18px; accent-color: var(--verde); }
+.boas-vindas { background: #EEF3EE; border: 1px solid #CFDDD3; border-radius: 20px; padding: 16px 18px; margin-bottom: 16px; }
+.boas-vindas strong { display: flex; align-items: center; gap: 8px; color: var(--verde); font-size: 16px; }
+.boas-vindas p { margin: 6px 0 4px; color: #44594D; font-size: 15px; line-height: 1.5; }
+.boas-vindas .btn-texto { padding-left: 0; }
