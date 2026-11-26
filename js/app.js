@@ -631,6 +631,19 @@
     const prefixo = teste ? "DIA DE TESTE" : `DIA ${n}`;
     const arq = `casal-${teste ? "teste" : "dia-" + n}.png`;
     const frase = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+    if (tab === "m" && d.frase) {
+      const b = blocosM(), blocos = [];
+      if (b.includes("v")) blocos.push({ tipo: "verso", texto: `“${d.v}”`, ref: d.ref.toUpperCase() });
+      if (b.includes("f")) blocos.push({ tipo: "frase", rotulo: "FRASE PARA GUARDAR", texto: `“${d.frase}”` });
+      if (b.includes("p")) blocos.push({ tipo: "pergunta", rotulo: "PARA CONVERSAR", texto: d.perguntas[0] });
+      const topo = b.includes("t") ? `${prefixo} · ${tituloDia(d.titulo).toUpperCase()}` : prefixo;
+      const partes = [];
+      if (b.includes("t")) partes.push(tituloDia(d.titulo));
+      if (b.includes("v")) partes.push(`“${d.v}” — ${d.ref}`);
+      if (b.includes("f")) partes.push(`Frase para guardar: “${d.frase}”`);
+      if (b.includes("p")) partes.push(`Para conversar: ${d.perguntas[0]}`);
+      return { ...base, topo, texto: JSON.stringify(blocos), blocos, msg: `${partes.join("\n\n")}\n\n${marca}: ${link}`, arquivo: arq };
+    }
     if (tab === "e" && d.frase) return { ...base, topo: `${prefixo} · FRASE PARA GUARDAR`, texto: `“${d.frase}”`, sub: tituloDia(d.titulo), rodape: d.ref.toUpperCase(),
       msg: `“${d.frase}”\n\n${tituloDia(d.titulo)} (${d.ref})\n\nPara conversar: ${d.perguntas[0]}\n\n${marca}: ${link}`, arquivo: arq };
     if (tab === "e") return { ...base, topo: `${prefixo} · ENSINO DO DIA`, texto: frase(d.titulo), sub: d.conversar, rodape: d.ref.toUpperCase(),
@@ -665,12 +678,17 @@
       msg: `“${d.v}” — ${d.ref}\n\n365 dias de gratidão: ${link}`, arquivo: `gratidao-${c.pre ? "exemplo" : "dia-" + n}.png` };
   }
 
+  // ---- Compartilhar · Montar (casais): o casal escolhe o que entra na imagem ----
+  const BLOCOS_M = [["v", "Versículo"], ["f", "Frase do dia"], ["p", "Pergunta para conversar"], ["t", "Título do dia"]];
+  const blocosM = () => (S.share.blocos && S.share.blocos.length ? S.share.blocos : ["v", "f"]);
+
   function telaShare() {
     const casal = S.dev === "c", c = C(), tab = S.share.tab;
     const testeC = casal && (!!S.p.teste || CC().pre);
     const dShareC = casal ? DC[(S.p.teste || CC().pre ? 1 : (S.p.dia || CC().card)) - 1] || {} : {};
     const rotE = dShareC.frase ? "Frase do dia" : "Ensino do dia";
-    const abas = casal ? (testeC ? [["v", "Versículo"], ["e", rotE]] : [["v", "Versículo"], ["e", rotE], ["a", "Nossa árvore"]])
+    const abaM = dShareC.frase ? [["m", "Montar"]] : [];
+    const abas = casal ? (testeC ? [["v", "Versículo"], ["e", rotE], ...abaM] : [["v", "Versículo"], ["e", rotE], ...abaM, ["a", "Nossa árvore"]])
       : (c.pre ? [["c", "Convite"], ["v", "Versículo"], ["t", "Verdade prática"]] : [["v", "Versículo"], ["t", "Verdade prática"], ["a", "Minha árvore"]]);
     const lista = casal ? G.MODELOS_CASAL : G.MODELOS;
     if (S.share.modelo >= lista.length) S.share.modelo = 0;
@@ -679,6 +697,7 @@
       <div class="rolagem share" style="padding-bottom:calc(30px + var(--base))">
         <div class="previa-wrap"><div class="previa" id="previa" aria-label="Prévia da imagem"></div></div>
         <div class="abas-share">${abas.map(([k, l]) => `<button class="${tab === k ? "ativo" : ""}" data-acao="share-tab" data-tab="${k}">${l}</button>`).join("")}</div>
+        ${casal && tab === "m" ? `<div class="montar"><span class="kicker">O que entra na imagem</span><div class="montar-op">${BLOCOS_M.map(([k, l]) => `<button class="${blocosM().includes(k) ? "ativo" : ""}" data-acao="montar-bloco" data-b="${k}" aria-pressed="${blocosM().includes(k)}">${blocosM().includes(k) ? ic("check", 15, 2.6) : ""}${l}</button>`).join("")}</div></div>` : ""}
         <span class="kicker">Escolha o modelo</span>
         <div class="modelos">${lista.map((m, i) => `<button class="${S.share.modelo === i ? "ativo" : ""}" data-acao="modelo" data-i="${i}" aria-label="Modelo ${m.nome}"><span class="amostra" style="background:${m.amostra};color:${m.destaque}">“</span>${m.nome}</button>`).join("")}</div>
         <div class="acoes">
@@ -850,6 +869,12 @@
         break;
       }
       case "share-tab": S.share.tab = el.dataset.tab; render(); break;
+      case "montar-bloco": {
+        const atual = blocosM().slice(), k = el.dataset.b, i = atual.indexOf(k);
+        if (i >= 0) { if (atual.length === 1) { G.toast("Deixe pelo menos um item na imagem."); break; } atual.splice(i, 1); }
+        else atual.push(k);
+        S.share.blocos = BLOCOS_M.map(([x]) => x).filter((x) => atual.includes(x)); render(); break;
+      }
       case "modelo": S.share.modelo = +el.dataset.i; render(); break;
       case "enviar": enviar(el.dataset.para); break;
       case "copiar-msg": { const ok = await G.copiar(conteudoShare().msg); G.toast(ok ? "Mensagem copiada. É só colar no WhatsApp junto com a imagem." : "Não foi possível copiar."); break; }

@@ -195,6 +195,59 @@
     return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
   }
 
+  // Card montado pelo casal: versículo, frase, pergunta (na ordem escolhida)
+  function desenharBlocos(ctx, W, H, M, blocos) {
+    const n = blocos.length, compacto = n >= 3;
+    const est = blocos.map((b) => {
+      let fonte, tam, lh, larg = 860;
+      if (b.tipo === "verso") { tam = compacto ? (b.texto.length > 160 ? 44 : 50) : (b.texto.length > 190 ? 50 : b.texto.length > 120 ? 56 : 62); fonte = `400 ${tam}px "Libre Baskerville", Georgia, serif`; lh = tam * 1.45; }
+      else if (b.tipo === "frase") { tam = compacto ? 50 : 58; fonte = `italic 400 ${tam}px "Libre Baskerville", Georgia, serif`; lh = tam * 1.42; }
+      else { tam = compacto ? 38 : 42; fonte = `500 ${tam}px "DM Sans", sans-serif`; lh = tam * 1.45; larg = 820; }
+      ctx.font = fonte;
+      const linhas = quebrar(ctx, b.texto, larg);
+      const alt = (b.rotulo ? 62 : 0) + linhas.length * lh + (b.ref ? 70 : 0);
+      return { b, fonte, lh, linhas, alt };
+    });
+    const sep = compacto ? 90 : 120;
+    const total = est.reduce((s, e) => s + e.alt, 0) + sep * (n - 1);
+    let y = Math.max(420, (H - total) / 2 + 30);
+    est.forEach((e, i) => {
+      if (i > 0) {
+        // separador: traço com um ponto no meio
+        const ys = y + sep / 2 - 10;
+        ctx.save(); ctx.strokeStyle = M.destaque; ctx.fillStyle = M.destaque; ctx.globalAlpha = 0.75; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(W / 2 - 110, ys); ctx.lineTo(W / 2 - 22, ys); ctx.moveTo(W / 2 + 22, ys); ctx.lineTo(W / 2 + 110, ys); ctx.stroke();
+        ctx.beginPath(); ctx.arc(W / 2, ys, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        y += sep;
+      }
+      ctx.textAlign = "center";
+      if (e.b.rotulo) {
+        ctx.fillStyle = M.destaque; ctx.font = '700 30px "DM Sans", sans-serif';
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "5px";
+        ctx.fillText(e.b.rotulo, W / 2, y + 34);
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+        y += 62;
+      }
+      ctx.fillStyle = M.cor; ctx.font = e.fonte;
+      if (e.b.tipo === "pergunta") ctx.globalAlpha = 0.95;
+      e.linhas.forEach((l) => { y += e.lh; ctx.fillText(l, W / 2, y - e.lh * 0.28); });
+      ctx.globalAlpha = 1;
+      if (e.b.ref) {
+        ctx.fillStyle = M.destaque; ctx.font = '700 32px "DM Sans", sans-serif';
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "3px";
+        ctx.fillText(e.b.ref, W / 2, y + 52);
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+        y += 70;
+      }
+    });
+  }
+
+  // toDataURL é síncrono e não fica esperando o navegador "ficar livre" (o toBlob pode demorar segundos)
+  async function canvasParaBlob(c) {
+    try { return await (await fetch(c.toDataURL("image/png"))).blob(); }
+    catch (e) { return new Promise((res) => c.toBlob((b) => res(b), "image/png")); }
+  }
+
   G.gerarImagem = async (o) => {
     // o = { modelo, topo, texto, sub, rodape, link, arvoreN }
     const casal = o.tema === "casal", lista = casal ? G.MODELOS_CASAL : G.MODELOS;
@@ -203,7 +256,8 @@
       await Promise.all([
         document.fonts.load('400 64px "Libre Baskerville"'),
         document.fonts.load('700 34px "DM Sans"'),
-        document.fonts.load('500 40px "DM Sans"')
+        document.fonts.load('500 40px "DM Sans"'),
+        document.fonts.load('italic 400 56px "Libre Baskerville"')
       ]);
     } catch (e) {}
     const c = document.createElement("canvas"); c.width = W; c.height = H;
@@ -232,6 +286,13 @@
     if ("letterSpacing" in ctx) ctx.letterSpacing = "6px";
     ctx.fillText(o.topo, W / 2, 330);
     if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    if (o.blocos && o.blocos.length) {
+      await desenharBlocos(ctx, W, H, M, o.blocos);
+      ctx.fillStyle = M.cor; ctx.textAlign = "center";
+      ctx.font = '400 44px "Libre Baskerville", Georgia, serif';
+      ctx.fillText(o.marca || "365 dias de gratidão", W / 2, H - 140);
+      return canvasParaBlob(c);
+    }
     // bloco central
     ctx.font = '400 64px "Libre Baskerville", Georgia, serif';
     const tamTexto = o.texto.length > 190 ? 60 : o.texto.length > 130 ? 66 : 76;
@@ -278,7 +339,7 @@
     ctx.fillStyle = M.cor;
     ctx.font = '400 44px "Libre Baskerville", Georgia, serif';
     ctx.fillText(o.marca || "365 dias de gratidão", W / 2, H - 140);
-    return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
+    return canvasParaBlob(c);
   };
 
   G.ehIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);

@@ -472,3 +472,8 @@ button[disabled] { opacity: 0.6; cursor: default; }
 .frase-c p{margin:8px 0 0;font-family:var(--f-serif);font-style:italic;font-size:calc(19.5px*var(--k));line-height:1.5;color:#5A2433}
 .prox-c{margin-top:16px;padding-top:14px;border-top:1px solid #E9E2D6}
 .prox-c p{margin:6px 0 0;font-size:calc(15px*var(--k));line-height:1.6;color:var(--texto-2);font-style:italic}
+/* Compartilhar · Montar */
+.montar{margin:4px 0 18px}
+.montar-op{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.montar-op button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #E3CDD1;background:#FFFCF8;color:#5A2433;font:600 14.5px var(--f-sans,inherit);cursor:pointer}
+.montar-op button.ativo{background:#8C3B4A;border-color:#8C3B4A;color:#FFF5F6}
