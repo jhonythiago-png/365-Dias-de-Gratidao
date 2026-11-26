@@ -490,6 +490,30 @@
   // cada pergunta em uma linha própria
   const perguntas = (t) => String(t).split(/(?<=\?)\s+(?=\S)/).map((q) => `<p>${esc(q)}</p>`).join("");
 
+  // ---- Casais: dias no formato novo (365 Dias para Construir a Dois) ----
+  const tituloDia = (t) => (t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+  function minutosDia(d) {
+    const txt = [d.onde, d.v, ...(d.conversa || []), d.verdade, d.evangelho, ...(d.perguntas || []), d.pratica, d.oracao, d.frase, d.proximo].join(" ");
+    const min = Math.round(txt.split(/\s+/).length / 100 + 6);
+    return Math.max(10, Math.min(20, min));
+  }
+  function devTopo(d) {
+    return `<h1 class="dia-titulo-c">${esc(d.titulo)}</h1>
+        <p class="tempo-dia">${ic("relogio", 15)} Cerca de ${minutosDia(d)} minutos a dois</p>
+        <section class="secao sem-linha onde-c"><span class="rotulo">Onde estamos na jornada?</span><p class="leitura">${esc(d.onde)}</p></section>`;
+  }
+  function devNovo(d) {
+    return `<section class="secao"><span class="rotulo">A conversa</span>${d.conversa.map((p) => `<p class="leitura">${esc(p)}</p>`).join("")}</section>
+        <section class="secao"><span class="rotulo">A verdade profunda</span><p class="leitura">${esc(d.verdade)}</p></section>
+        <section class="secao sem-linha evang-c"><span class="rotulo">A resposta do Evangelho</span><p class="leitura">${esc(d.evangelho)}</p></section>
+        <section class="conversa"><span class="rotulo">Para conversar</span><ol class="perg-c">${d.perguntas.map((q) => `<li>${esc(q)}</li>`).join("")}</ol></section>
+        <section class="pratica-c"><span class="rotulo">Prática do dia</span><p>${esc(d.pratica)}</p></section>`;
+  }
+  function devFim(d) {
+    return `<section class="frase-c"><span class="rotulo">Frase para guardar</span><p>“${esc(d.frase)}”</p></section>
+        <section class="prox-c"><span class="rotulo">Para onde estamos indo?</span><p>${esc(d.proximo)}</p></section>`;
+  }
+
   function cDev() {
     const c = CC(), teste = !!S.p.teste, n = teste ? 1 : S.p.dia, d = DC[n - 1], e = c.etapa(n);
     const leitura = teste ? !!S.p.leitura : c.feito(n);
@@ -500,15 +524,17 @@
         <span class="tag-dev">${BROTO(14)} Etapa ${e.n} · ${esc(e.tema)}</span>
         <div class="dia-cab"><span>Dia ${n}</span>${d.subtitulo ? `<strong>${esc(d.subtitulo)}</strong>` : ""}</div>
         ${leitura ? `<p class="faixa ok">${ic("check", 17, 2.4)} Dia concluído · modo de leitura</p>` : ""}
+        ${d.onde ? devTopo(d) : ""}
         <section class="bloco-verso">
-          <span class="rotulo">Versículo</span>
+          <span class="rotulo">${d.onde ? "Texto bíblico" : "Versículo"}</span>
           <div class="aspas-g">“</div>
           <p>${esc(d.v)}</p>
           <div class="verso-rodape"><cite>— ${esc(d.ref)}</cite><button class="btn-pilula" data-acao="c-compartilhar" data-tab="v" ${teste ? 'data-teste="1"' : `data-dia="${n}"`} aria-label="Compartilhar versículo">${ic("enviar", 16)} Compartilhar</button></div>
         </section>
-        <section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
-        <section class="conversa"><span class="rotulo">Para conversar</span>${perguntas(d.conversar)}</section>
+        ${d.onde ? devNovo(d) : `<section class="secao"><span class="rotulo">Ensino do dia</span><h2 class="ensino-tit">${esc(d.titulo)}</h2><p class="leitura">${esc(d.ensino)}</p></section>
+        <section class="conversa"><span class="rotulo">Para conversar</span>${perguntas(d.conversar)}</section>`}
         <section class="oracao-c"><span class="rotulo">${leitura ? "Oração do casal" : "Orem juntos"}</span>${leitura ? "" : `<small class="ora-dica">De mãos dadas, leiam juntos em voz alta.</small>`}<p>${esc(d.oracao)}</p></section>
+        ${d.onde ? devFim(d) : ""}
         ${leitura ? "" : `<button class="btn-prim largo" style="margin-top:22px" data-acao="${teste ? "c-momento-teste" : "c-momento"}">${ic("relogio", 19)} Iniciar momento a dois</button>`}
         ${tamCtrl()}
       </div>
@@ -591,7 +617,7 @@
         ${dias.length ? "" : `<p class="aux">Os dias que vocês concluírem vão aparecer aqui.</p>`}
         <div class="lista-dias">${dias.map((n) => `<button class="item-dia" data-acao="${teste ? "c-reler-teste" : "c-abrir"}" data-dia="${n}">
             <span class="num"><small>DIA</small><b>${n}</b></span>
-            <span class="tx"><strong>${esc(DC[n - 1].ref)}</strong><span>${esc(DC[n - 1].titulo.charAt(0) + DC[n - 1].titulo.slice(1).toLowerCase())}</span></span>
+            <span class="tx"><strong>${esc(DC[n - 1].ref)}</strong><span>${esc(tituloDia(DC[n - 1].titulo))}</span></span>
             <span style="color:#A8505F">${ic("seta", 18, 2)}</span></button>`).join("")}</div>
       </div>
       ${nav("prog")}`;
@@ -605,6 +631,8 @@
     const prefixo = teste ? "DIA DE TESTE" : `DIA ${n}`;
     const arq = `casal-${teste ? "teste" : "dia-" + n}.png`;
     const frase = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+    if (tab === "e" && d.frase) return { ...base, topo: `${prefixo} · FRASE PARA GUARDAR`, texto: `“${d.frase}”`, sub: tituloDia(d.titulo), rodape: d.ref.toUpperCase(),
+      msg: `“${d.frase}”\n\n${tituloDia(d.titulo)} (${d.ref})\n\nPara conversar: ${d.perguntas[0]}\n\n${marca}: ${link}`, arquivo: arq };
     if (tab === "e") return { ...base, topo: `${prefixo} · ENSINO DO DIA`, texto: frase(d.titulo), sub: d.conversar, rodape: d.ref.toUpperCase(),
       msg: `${frase(d.titulo)} (${d.ref})\n\nPara conversar: ${d.conversar}\n\n${marca}: ${link}`, arquivo: arq };
     if (tab === "a") {
@@ -640,7 +668,9 @@
   function telaShare() {
     const casal = S.dev === "c", c = C(), tab = S.share.tab;
     const testeC = casal && (!!S.p.teste || CC().pre);
-    const abas = casal ? (testeC ? [["v", "Versículo"], ["e", "Ensino do dia"]] : [["v", "Versículo"], ["e", "Ensino do dia"], ["a", "Nossa árvore"]])
+    const dShareC = casal ? DC[(S.p.teste || CC().pre ? 1 : (S.p.dia || CC().card)) - 1] || {} : {};
+    const rotE = dShareC.frase ? "Frase do dia" : "Ensino do dia";
+    const abas = casal ? (testeC ? [["v", "Versículo"], ["e", rotE]] : [["v", "Versículo"], ["e", rotE], ["a", "Nossa árvore"]])
       : (c.pre ? [["c", "Convite"], ["v", "Versículo"], ["t", "Verdade prática"]] : [["v", "Versículo"], ["t", "Verdade prática"], ["a", "Minha árvore"]]);
     const lista = casal ? G.MODELOS_CASAL : G.MODELOS;
     if (S.share.modelo >= lista.length) S.share.modelo = 0;
