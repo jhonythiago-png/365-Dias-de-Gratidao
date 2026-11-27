@@ -628,7 +628,6 @@
     const cc = CC(), tab = S.share.tab, teste = !!S.p.teste || cc.pre;
     const n = teste ? 1 : (S.p.dia || cc.card), d = DC[n - 1], e = cc.etapa(n);
     const link = C().link, marca = "Devocional de casais", base = { tema: "casal", marca, link };
-    const prefixo = teste ? "DIA DE TESTE" : `DIA ${n}`;
     const arq = `casal-${teste ? "teste" : "dia-" + n}.png`;
     const frase = (t) => t.charAt(0) + t.slice(1).toLowerCase();
     if (tab === "m" && d.frase) {
@@ -636,7 +635,7 @@
       if (b.includes("v")) blocos.push({ tipo: "verso", texto: `“${d.v}”`, ref: d.ref.toUpperCase() });
       if (b.includes("f")) blocos.push({ tipo: "frase", rotulo: "FRASE PARA GUARDAR", texto: `“${d.frase}”` });
       if (b.includes("p")) blocos.push({ tipo: "pergunta", rotulo: "PARA CONVERSAR", texto: d.perguntas[0] });
-      const topo = b.includes("t") ? `${prefixo} · ${tituloDia(d.titulo).toUpperCase()}` : prefixo;
+      const topo = b.includes("t") ? tituloDia(d.titulo).toUpperCase() : "";
       const partes = [];
       if (b.includes("t")) partes.push(tituloDia(d.titulo));
       if (b.includes("v")) partes.push(`“${d.v}” — ${d.ref}`);
@@ -644,9 +643,9 @@
       if (b.includes("p")) partes.push(`Para conversar: ${d.perguntas[0]}`);
       return { ...base, topo, texto: JSON.stringify(blocos), blocos, msg: `${partes.join("\n\n")}\n\n${marca}: ${link}`, arquivo: arq };
     }
-    if (tab === "e" && d.frase) return { ...base, topo: `${prefixo} · FRASE PARA GUARDAR`, texto: `“${d.frase}”`, sub: tituloDia(d.titulo), rodape: d.ref.toUpperCase(),
+    if (tab === "e" && d.frase) return { ...base, topo: "FRASE PARA GUARDAR", texto: `“${d.frase}”`, sub: tituloDia(d.titulo), rodape: d.ref.toUpperCase(),
       msg: `“${d.frase}”\n\n${tituloDia(d.titulo)} (${d.ref})\n\nPara conversar: ${d.perguntas[0]}\n\n${marca}: ${link}`, arquivo: arq };
-    if (tab === "e") return { ...base, topo: `${prefixo} · ENSINO DO DIA`, texto: frase(d.titulo), sub: d.conversar, rodape: d.ref.toUpperCase(),
+    if (tab === "e") return { ...base, topo: "ENSINO DO DIA", texto: frase(d.titulo), sub: d.conversar, rodape: d.ref.toUpperCase(),
       msg: `${frase(d.titulo)} (${d.ref})\n\nPara conversar: ${d.conversar}\n\n${marca}: ${link}`, arquivo: arq };
     if (tab === "a") {
       const nF = cc.nF, ea = cc.etapa(Math.min(cc.card, 365));
@@ -654,7 +653,7 @@
         rodape: `FASE ${ea.n} DE 12 · ${ea.fase.toUpperCase()}`, arvoreImg: `img/arvore-casal/fase${String(ea.n).padStart(2, "0")}.png`,
         msg: `Nossa árvore do casal já está na fase "${ea.fase}": ${nF} ${nF === 1 ? "dia" : "dias"} a dois. 🌱\n\n${marca}: ${link}`, arquivo: "nossa-arvore-do-casal.png" };
     }
-    return { ...base, topo: `${prefixo} · VERSÍCULO`, texto: `“${d.v}”`, rodape: d.ref.toUpperCase(),
+    return { ...base, topo: "VERSÍCULO", texto: `“${d.v}”`, rodape: d.ref.toUpperCase(),
       msg: `“${d.v}” — ${d.ref}\n\n${marca}: ${link}`, arquivo: arq };
   }
 
