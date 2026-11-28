@@ -58,7 +58,8 @@
   function CC() {
     const hoje = G.hoje();
     const lanc = S.config.casal_lancamento ? G.dataISO(S.config.casal_lancamento) : hoje;
-    const pre = hoje < lanc;
+    // o administrador vê o Casais como já lançado (para revisar os dias antes da data)
+    const pre = hoje < lanc && !S.perfil.is_admin;
     let inicio = null;
     S.concCasal.forEach((d) => { if (!inicio || d < inicio) inicio = d; });
     const lib = pre ? 0 : inicio ? Math.min(365, Math.max(1, G.diasEntre(inicio, hoje) + 1)) : 1;
